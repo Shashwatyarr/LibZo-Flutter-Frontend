@@ -1,4 +1,5 @@
 import 'package:bookproject/services/update_service.dart';
+import 'package:bookproject/ui/widgets/app_background.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -31,7 +32,7 @@ class _SplashscreenState extends State<Splashscreen> {
     User? user = FirebaseAuth.instance.currentUser;
 
     if (user == null) {
-      Navigator.pushReplacementNamed(context, "/login");
+      Navigator.pushReplacementNamed(context, "/onboarding");
     } else {
       Navigator.pushReplacementNamed(context, "/home");
     }
@@ -64,7 +65,7 @@ class _SplashscreenState extends State<Splashscreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Center(child: CircularProgressIndicator()),
+      body: AppBackground(child: Center(child: CircularProgressIndicator())),
     );
   }
 }

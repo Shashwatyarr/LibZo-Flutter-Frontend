@@ -1,27 +1,340 @@
-import 'package:bookproject/services/auth_services.dart';
+import 'package:bookproject/services/auth_services.dart'; // Make sure this path is correct in your project
+import 'package:bookproject/ui/screens/create_account.dart';
+import 'package:bookproject/ui/widgets/app_background.dart'; // Ensure this path is correct
+import 'package:bookproject/utils/fonts.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/svg.dart';
 
-class LoginScreen extends StatelessWidget {
+import '../../services/auth_api.dart';
+
+class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      body: Center(
-        child: ElevatedButton(onPressed: ()async{
-          final user = await authService.signInWithGoogle();
+  State<LoginScreen> createState() => _LoginScreenState();
+}
 
-          if (user != null) {
-            Navigator.pushReplacementNamed(context, "/home");
-          }
-        },
-            style: ElevatedButton.styleFrom(
-          padding: const EdgeInsets.symmetric(horizontal: 40,vertical: 15),
+class _LoginScreenState extends State<LoginScreen> {
+  // Controllers to retrieve text
+  final TextEditingController _emailController = TextEditingController();
+  final TextEditingController _passwordController = TextEditingController();
+
+  // State for toggling password visibility
+  bool _isPasswordVisible = false;
+
+  @override
+  void dispose() {
+    _emailController.dispose();
+    _passwordController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    // Define colors from the image
+    const Color primaryBlue = Color(0xFF0066FF);
+    const Color accentGreen = Color(0xFF00C896);
+    const Color inputFillColor = Color(0xFF12151C); // Very dark blue/grey// Almost black, slightly transparent look
+
+    return Scaffold(
+      // extending body behind app bar if you add one later
+      extendBodyBehindAppBar: true,
+      body: AppBackground(
+        child: SafeArea(
+          child: Center(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.symmetric(horizontal: 24.0),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  // --- Header Section ---
+                  Text(
+                    "Libzo",
+                    style: AppTextStyles.title(),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    "Your world of stories awaits.",
+                    style: AppTextStyles.subtitle()
+                  ),
+                  const SizedBox(height: 40),
+
+                  // --- Login Card ---
+                  Container(
+                    padding: const EdgeInsets.all(24),
+                    decoration: BoxDecoration(
+                      color: Colors.transparent,
+                      borderRadius: BorderRadius.circular(24),
+                      border: Border.all(
+                        color: Colors.white.withOpacity(0.08), // Subtle border
+                        width: 1,
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.2),
+                          blurRadius: 20,
+                          offset: const Offset(0, 10),
+                        ),
+                      ],
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Email Field
+                        _buildLabel("EMAIL ADDRESS"),
+                        const SizedBox(height: 8),
+                        _buildTextField(
+                          controller: _emailController,
+                          hintText: "name@example.com",
+                          icon: Icons.mail_outline,
+                          fillColor: inputFillColor.withOpacity(0.4),
+                        ),
+
+                        const SizedBox(height: 20),
+
+                        // Password Field
+                        _buildLabel("PASSWORD"),
+                        const SizedBox(height: 8),
+                        _buildTextField(
+                          controller: _passwordController,
+                          hintText: "••••••••",
+                          icon: Icons.lock_outline,
+                          fillColor: inputFillColor.withOpacity(0.4),
+                          isPassword: true,
+                          isPasswordVisible: _isPasswordVisible,
+                          onVisibilityToggle: () {
+                            setState(() {
+                              _isPasswordVisible = !_isPasswordVisible;
+                            });
+                          },
+                        ),
+
+                        // Forgot Password
+                        Align(
+                          alignment: Alignment.centerRight,
+                          child: TextButton(
+                            onPressed: () {
+                              // TODO: Handle Forgot Password
+                            },
+                            style: TextButton.styleFrom(
+                              foregroundColor: Colors.white54,
+                              padding: const EdgeInsets.symmetric(vertical: 0, horizontal: 0),
+                              minimumSize: Size.zero,
+                              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                            ),
+                            child: const Text(
+                              "Forgot password?",
+                              style: TextStyle(fontSize: 12),
+                            ),
+                          ),
+                        ),
+
+                        const SizedBox(height: 24),
+
+                        // Log In Button
+                        SizedBox(
+                          width: double.infinity,
+                          height: 50,
+                          child: ElevatedButton(
+                            onPressed: ()async{
+                                try{
+                                  final res=await AuthApi.login(
+                                    email: _emailController.text.trim(),
+                                    password: _passwordController.text,
+                                  );
+
+                                  final toke=res['token'];
+                                  final user=res['user'];
+
+                                  Navigator.pushNamed(context, "/otp",arguments: {"email": _emailController.text.trim()});
+                                }
+                                catch(e){
+                                  print(e.toString());
+                                }
+                            },
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: primaryBlue,
+                              foregroundColor: Colors.white,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              elevation: 6,
+                              shadowColor: primaryBlue.withOpacity(0.4)
+                            ),
+                            child: const Text(
+                              "Log In",
+                              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                            ),
+                          ),
+                        ),
+
+                        const SizedBox(height: 24),
+
+                        // Divider
+                        Row(
+                          children: [
+                            const Expanded(child: Divider(color: Colors.white12)),
+                            Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 12),
+                              child: Text(
+                                "OR CONTINUE WITH",
+                                style: TextStyle(
+                                    fontSize: 10,
+                                    color: Colors.white.withOpacity(0.3),
+                                    fontWeight: FontWeight.bold
+                                ),
+                              ),
+                            ),
+                            const Expanded(child: Divider(color: Colors.white12)),
+                          ],
+                        ),
+
+                        const SizedBox(height: 24),
+
+                        // Google Button
+                        SizedBox(
+                          width: double.infinity,
+                          height: 50,
+                          child: ElevatedButton(
+                            onPressed: () async {final user = await authService.signInWithGoogle();
+                              if (user != null && mounted) {
+                                Navigator.pushReplacementNamed(context, "/home");
+                              }
+                              print("Google Sign In Pressed");
+                            },
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.white.withOpacity(0.05), // Glassy dark
+                              foregroundColor: Colors.white,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                side: BorderSide(color: Colors.white.withOpacity(0.1)),
+                              ),
+                              elevation: 0,
+                            ),
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  SvgPicture.asset(
+                                    'assets/images/google.svg',
+                                    width: 24,
+                                    height: 24,
+                                  ),
+                                  const SizedBox(width: 8),
+                                  const Text(
+                                    "Google",
+                                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                                  ),
+                                ],
+                              )
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  const SizedBox(height: 30),
+
+                  // --- Footer ---
+                  GestureDetector(
+                    onTap: () {
+                      Navigator.pushReplacementNamed(context, "/signup");
+                    },
+                    child: RichText(
+                      text: TextSpan(
+                        style: const TextStyle(fontSize: 14),
+                        children: [
+                          TextSpan(
+                            text: "Don't have an account? ",
+                            style: AppTextStyles.subtitle(color: Colors.white.withOpacity(0.5)),
+                          ),
+                          TextSpan(
+                            text: "Create account",
+                            style: AppTextStyles.subtitle(
+                              color: accentGreen,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
         ),
-            child: Text(
-              "SignIn with Google",
-              style: TextStyle(fontSize: 18),
-            )),
+      ),
+    );
+  }
+
+  // --- Helper Widgets ---
+
+  Widget _buildLabel(String text) {
+    return Text(
+      text,
+      style: const TextStyle(
+        color: Colors.white54,
+        fontSize: 10,
+        fontWeight: FontWeight.bold,
+        letterSpacing: 0.8,
+      ),
+    );
+  }
+
+  Widget _buildTextField({
+    required TextEditingController controller,
+    required String hintText,
+    required IconData icon,
+    required Color fillColor,
+    bool isPassword = false,
+    bool isPasswordVisible = false,
+    VoidCallback? onVisibilityToggle,
+  }) {
+    return Container(
+      decoration: BoxDecoration(
+        color: fillColor,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: TextField(
+        controller: controller,
+        obscureText: isPassword && !isPasswordVisible,
+        style: const TextStyle(color: Colors.white),
+        decoration: InputDecoration(
+          hintText: hintText,
+          hintStyle: TextStyle(color: Colors.white.withOpacity(0.3)),
+          prefixIcon: Icon(icon, color: Colors.white54, size: 20),
+          suffixIcon: isPassword
+              ? IconButton(
+            icon: Icon(
+              isPasswordVisible ? Icons.visibility : Icons.visibility_off,
+              color: Colors.white38,
+              size: 20,
+            ),
+            onPressed: onVisibilityToggle,
+          )
+              : null,
+          enabledBorder: OutlineInputBorder(
+            borderSide: BorderSide(
+              color: Colors.white.withOpacity(0.1),
+              width: 1,
+            ),
+            borderRadius: BorderRadius.circular(12),
+          ),
+
+          focusedBorder: OutlineInputBorder(
+            borderSide: BorderSide(
+              color: Colors.white.withOpacity(0.3),
+              width: 1.4,
+            ),
+            borderRadius: BorderRadius.circular(12),
+          ),
+
+          // Remove double borders
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          contentPadding: const EdgeInsets.symmetric(vertical: 16),
+        ),
       ),
     );
   }
