@@ -4,7 +4,9 @@ import 'package:bookproject/services/auth_api.dart';
 import 'package:bookproject/services/auth_services.dart';
 import 'package:bookproject/ui/widgets/app_background.dart';
 import 'package:bookproject/utils/fonts.dart';
+import 'package:bookproject/utils/snackbar.dart';
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
 // import 'package:flutter_svg/svg.dart'; // Uncomment if you add social login here too
 
 class CreateAccountScreen extends StatefulWidget {
@@ -18,18 +20,20 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
   // Controllers
   final TextEditingController _usernameController = TextEditingController();
   final TextEditingController _fullNameController = TextEditingController();
+  final TextEditingController _telegramController = TextEditingController();
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
 
   // State for toggling password visibility
   bool _isPasswordVisible = false;
-
+  bool loading = false;
   @override
   void dispose() {
     _usernameController.dispose();
     _fullNameController.dispose();
     _emailController.dispose();
     _passwordController.dispose();
+    _telegramController.dispose();
     super.dispose();
   }
 
@@ -129,6 +133,17 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
                             icon: Icons.mail_outline,
                             fillColor: inputFillColor.withOpacity(0.4),
                           ),
+                          const SizedBox(height: 16),
+
+                          // TELEGRAM USERNAME
+                          _buildLabel("TELEGRAM USERNAME"),
+                          const SizedBox(height: 8),
+                          _buildTextField(
+                            controller: _telegramController,
+                            hintText: "your_telegram_username",
+                            icon: Icons.telegram,
+                            fillColor: inputFillColor.withOpacity(0.4),
+                          ),
 
                           const SizedBox(height: 16),
 
@@ -156,25 +171,43 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
                             width: double.infinity,
                             height: 50,
                             child: ElevatedButton(
-                              onPressed: () async{
+                              onPressed: loading ? null : () async {
+                                setState(() => loading = true);
+
                                 try {
                                   final res = await AuthApi.signup(
+
                                     username: _usernameController.text.trim(),
+
                                     fullname: _fullNameController.text.trim(),
+
                                     email: _emailController.text.trim(),
+
                                     password: _passwordController.text,
+
+                                    telegramUsername: _telegramController.text.trim(),
                                   );
 
-                                  final token = res['token'];
-                                  final user = res['user'];
+                                    // 👉 Telegram open karo
+                                  final link = res["telegramLink"];
 
-                                  Navigator.pushReplacementNamed(
-                                      context, '/otp',arguments: {"email":_emailController.text.trim()});
+                                  await launchUrl(Uri.parse(link));
+
+                                    // User ko guide
+                                  showErrorSnackBar(
+                                      context,
+                                      "Open Telegram → press START → then Login"
+                                  );
+
+                                    // Signup ke baad login page pe bhejo
+                                  Navigator.pushReplacementNamed(context, "/login");
+                                } catch (e) {
+                                  showErrorSnackBar(context, e.toString());
                                 }
-                                catch(e){
-                                  print(e.toString());
-                                }
+
+                                setState(() => loading = false);
                               },
+
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: primaryBlue,
                                 foregroundColor: Colors.white,
@@ -184,10 +217,21 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
                                 elevation: 0,
                                 shadowColor: primaryBlue,
                               ),
-                              child: const Text(
+                              child: loading
+                                  ? const SizedBox(
+                                height: 22,
+                                width: 22,
+                                child: CircularProgressIndicator(
+                                  color: Colors.white,
+                                  strokeWidth: 2,
+                                ),
+                              )
+                                  : const Text(
                                 "Create Account",
-                                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                                style: TextStyle(
+                                    fontSize: 16, fontWeight: FontWeight.bold),
                               ),
+
                             ),
                           ),
                         ],

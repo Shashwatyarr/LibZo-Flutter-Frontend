@@ -2,8 +2,10 @@ import 'package:bookproject/services/auth_services.dart'; // Make sure this path
 import 'package:bookproject/ui/screens/create_account.dart';
 import 'package:bookproject/ui/widgets/app_background.dart'; // Ensure this path is correct
 import 'package:bookproject/utils/fonts.dart';
+import 'package:bookproject/utils/snackbar.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../services/auth_api.dart';
 
@@ -16,7 +18,9 @@ class LoginScreen extends StatefulWidget {
 
 class _LoginScreenState extends State<LoginScreen> {
   // Controllers to retrieve text
-  final TextEditingController _emailController = TextEditingController();
+  bool loading = false;
+  final TextEditingController _usernameController = TextEditingController();
+  final TextEditingController _telegramController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
 
   // State for toggling password visibility
@@ -24,7 +28,8 @@ class _LoginScreenState extends State<LoginScreen> {
 
   @override
   void dispose() {
-    _emailController.dispose();
+    _usernameController.dispose();
+    _telegramController.dispose();
     _passwordController.dispose();
     super.dispose();
   }
@@ -80,16 +85,27 @@ class _LoginScreenState extends State<LoginScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        // Email Field
-                        _buildLabel("EMAIL ADDRESS"),
+                        // Username Field
+                        _buildLabel("USERNAME"),
                         const SizedBox(height: 8),
                         _buildTextField(
-                          controller: _emailController,
-                          hintText: "name@example.com",
-                          icon: Icons.mail_outline,
+                          controller: _usernameController,
+                          hintText: "your username",
+                          icon: Icons.person_outline,
                           fillColor: inputFillColor.withOpacity(0.4),
                         ),
 
+                        const SizedBox(height: 20),
+
+// Telegram Username
+                        _buildLabel("TELEGRAM USERNAME"),
+                        const SizedBox(height: 8),
+                        _buildTextField(
+                          controller: _telegramController,
+                          hintText: "@your_telegram",
+                          icon: Icons.telegram,
+                          fillColor: inputFillColor.withOpacity(0.4),
+                        ),
                         const SizedBox(height: 20),
 
                         // Password Field
@@ -136,22 +152,60 @@ class _LoginScreenState extends State<LoginScreen> {
                           width: double.infinity,
                           height: 50,
                           child: ElevatedButton(
-                            onPressed: ()async{
-                                try{
-                                  final res=await AuthApi.login(
-                                    email: _emailController.text.trim(),
-                                    password: _passwordController.text,
+                            onPressed: loading ? null : () async {
+                              setState(() => loading = true);
+
+                              try {
+
+                                // STEP 1 – Login
+                                await AuthApi.login(
+                                  username: _usernameController.text.trim(),
+                                  password: _passwordController.text,
+                                );
+
+                                // STEP 2 – Check Telegram linked
+                                bool linked = await AuthApi.checkTelegramLinked(
+                                    _usernameController.text.trim()
+                                );
+
+                                if (!linked) {
+
+                                  // Telegram open karo
+                                  final link =
+                                      "https://t.me/libzo_auth_bot?start=${_usernameController.text.trim()}";
+
+                                  await launchUrl(Uri.parse(link));
+
+                                  showErrorSnackBar(
+                                      context,
+                                      "Open Telegram and press START first"
                                   );
 
-                                  final toke=res['token'];
-                                  final user=res['user'];
+                                  return;
+                                }
 
-                                  Navigator.pushNamed(context, "/otp",arguments: {"email": _emailController.text.trim()});
-                                }
-                                catch(e){
-                                  print(e.toString());
-                                }
+                                // STEP 3 – Request OTP
+                                await AuthApi.requestOtp(
+                                  username: _usernameController.text.trim(),
+                                );
+
+                                // STEP 4 – Go to OTP screen
+                                Navigator.pushNamed(
+                                  context,
+                                  "/otp",
+                                  arguments: {
+                                    "username": _usernameController.text.trim()
+                                  },
+                                );
+
+                              } catch (e) {
+                                showErrorSnackBar(context, e.toString());
+                              }
+
+                              setState(() => loading = false);
                             },
+
+
                             style: ElevatedButton.styleFrom(
                               backgroundColor: primaryBlue,
                               foregroundColor: Colors.white,
@@ -161,10 +215,23 @@ class _LoginScreenState extends State<LoginScreen> {
                               elevation: 6,
                               shadowColor: primaryBlue.withOpacity(0.4)
                             ),
-                            child: const Text(
+                            child: loading
+                                ? const SizedBox(
+                              height: 22,
+                              width: 22,
+                              child: CircularProgressIndicator(
+                                color: Colors.white,
+                                strokeWidth: 2,
+                              ),
+                            )
+                                : const Text(
                               "Log In",
-                              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                              ),
                             ),
+
                           ),
                         ),
 

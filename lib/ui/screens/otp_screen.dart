@@ -1,10 +1,11 @@
 import 'package:bookproject/services/auth_api.dart';
 import 'package:bookproject/ui/widgets/app_background.dart';
+import 'package:bookproject/utils/snackbar.dart';
 import 'package:flutter/material.dart';
 
 class OtpScreen extends StatefulWidget {
-  final String email;
-  const OtpScreen({super.key, required this.email});
+  final String username;
+  const OtpScreen({super.key, required this.username});
 
   @override
   State<OtpScreen> createState() => _OtpScreenState();
@@ -37,30 +38,33 @@ class _OtpScreenState extends State<OtpScreen> {
 
     try {
       final res = await AuthApi.verifyOtp(
-        email: widget.email,
+        username: widget.username,
         otp: otp,
       );
 
       print(res);
       await AuthApi.saveToken(res["token"]);
+
+      await AuthApi.saveUserId(res["user"]["_id"]);
       if (mounted) {
         Navigator.pushNamedAndRemoveUntil(
             context, "/home", (_) => false);
       }
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(e.toString())));
+        SnackBar(content: Text(e.toString())),
+      );
     }
 
     setState(() => loading = false);
   }
 
-  Future<void> resendOtp() async {
-    await AuthApi.resendOtp(widget.email);
-
-    ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("OTP resent")));
-  }
+  // Future<void> resendOtp() async {
+  //   await AuthApi.resendOtp(widget.username);
+  //
+  //   ScaffoldMessenger.of(context).showSnackBar(
+  //       const SnackBar(content: Text("OTP resent")));
+  // }
 
   @override
   Widget build(BuildContext context) {
@@ -87,7 +91,7 @@ class _OtpScreenState extends State<OtpScreen> {
                   TextStyle(color: Colors.white.withOpacity(0.6)),
                 ),
                 const SizedBox(height: 40),
-
+                telegramGuideText(),
                 /// OTP BOXES
                 Row(
                   mainAxisAlignment:
@@ -149,7 +153,7 @@ class _OtpScreenState extends State<OtpScreen> {
                               .withOpacity(0.5)),
                     ),
                     GestureDetector(
-                      onTap: resendOtp,
+                      //onTap: resendOtp,
                       child: const Text(
                         "Resend Code",
                         style: TextStyle(
@@ -169,3 +173,59 @@ class _OtpScreenState extends State<OtpScreen> {
     );
   }
 }
+
+Widget telegramGuideText() {
+  return RichText(
+    textAlign: TextAlign.center,
+    text: TextSpan(
+      style: const TextStyle(fontSize: 14, height: 1.4),
+      children: [
+        const TextSpan(
+          text: "Open ",
+          style: TextStyle(color: Colors.white70),
+        ),
+
+        TextSpan(
+          text: "Telegram ",
+          style: TextStyle(
+            color: Colors.blueAccent.shade200,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+
+        const TextSpan(
+          text: "and go to ",
+          style: TextStyle(color: Colors.white70),
+        ),
+
+        TextSpan(
+          text: "Libzo Auth Bot",
+          style: TextStyle(
+            color: Colors.greenAccent.shade200,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+
+        const TextSpan(
+          text: ". Tap on ",
+          style: TextStyle(color: Colors.white70),
+        ),
+
+        TextSpan(
+          text: "START",
+          style: TextStyle(
+            color: Colors.orangeAccent.shade200,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+
+        const TextSpan(
+          text:
+          " there — the OTP will arrive in Telegram. Enter that OTP here to continue.",
+          style: TextStyle(color: Colors.white70),
+        ),
+      ],
+    ),
+  );
+}
+

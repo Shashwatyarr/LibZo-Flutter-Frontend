@@ -37,10 +37,6 @@ class HomeScreen extends StatelessWidget {
                     style: TextStyle(fontSize: 20),
                   ),
                 ),
-                ElevatedButton(onPressed: ()=>
-                {
-                  Navigator.pushReplacementNamed(context, "/feed")
-                }, child: Text('go to feed'))
               ],
             ),
           ),
