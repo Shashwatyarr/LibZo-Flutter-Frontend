@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../services/library_services.dart';
+
 class BookCard extends StatelessWidget {
   final String title;
   final String author;
@@ -29,7 +31,8 @@ class BookCard extends StatelessWidget {
             children: [
               // Container for Shadow and Image
               GestureDetector(
-                onTap: () {
+                onTap: () async {
+                  await LibraryService.increasePopularity(bookID);
                   Navigator.pushNamed(
                     context,
                     "/book",

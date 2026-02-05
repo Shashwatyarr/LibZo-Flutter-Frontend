@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 
 import '../../services/library_services.dart';
 import '../widgets/Book_card.dart';
+import '../widgets/app_background.dart';
 
 class LibraryScreen extends StatefulWidget {
   const LibraryScreen({super.key});
@@ -48,12 +49,15 @@ class _LibraryScreenState extends State<LibraryScreen> {
 
   // ===== MAIN LOADER =====
   Future loadBooks({bool reset = false}) async {
+
     if (loading) return;
 
     if (reset) {
-      page = 1;
-      hasMore = true;
-      books.clear();
+      setState(() {
+        page = 1;
+        hasMore = true;
+        books.clear();
+      });
     }
 
     setState(() => loading = true);
@@ -63,9 +67,11 @@ class _LibraryScreenState extends State<LibraryScreen> {
 
       if (selectedCategory == "All") {
         res = await LibraryService.getAllBooks(page);
-      } else if (selectedCategory == "Trending") {
+      }
+      else if (selectedCategory == "Trending") {
         res = await LibraryService.getTrending(page);
-      } else {
+      }
+      else {
         res = await LibraryService
             .getByCategory(selectedCategory, page);
       }
@@ -77,11 +83,12 @@ class _LibraryScreenState extends State<LibraryScreen> {
       });
 
     } catch (e) {
-      debugPrint(e.toString());
+      debugPrint("Load Error: $e");
     }
 
     setState(() => loading = false);
   }
+
 
   // ===== SEARCH =====
   Future onSearch(String q) async {
@@ -108,7 +115,7 @@ class _LibraryScreenState extends State<LibraryScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: AppBackground2(
+      body: AppBackground(
         child: SafeArea(
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 20.0),
@@ -117,7 +124,7 @@ class _LibraryScreenState extends State<LibraryScreen> {
               children: [
 
                 const SizedBox(height: 10),
-                const HeaderSection(),
+                HeaderSection(onRefresh: () => loadBooks(reset: true),),
                 const SizedBox(height: 20),
 
                 // ===== SEARCH BAR =====
@@ -142,60 +149,68 @@ class _LibraryScreenState extends State<LibraryScreen> {
 
                 // ===== GRID =====
                 Expanded(
-                  child: NotificationListener<
-                      ScrollNotification>(
-                    onNotification: (scroll) {
-                      if (scroll.metrics.pixels >
-                          scroll.metrics.maxScrollExtent - 200 &&
-                          hasMore &&
-                          !loading) {
-                        loadBooks();
-                      }
-                      return true;
+                  child: RefreshIndicator(
+                    color: const Color(0xFF00E5FF),
+
+                    onRefresh: () async {
+                      await loadBooks(reset: true);
                     },
 
-                    child: GridView.builder(
-                      physics:
-                      const BouncingScrollPhysics(),
-                      itemCount:
-                      books.length + (hasMore ? 1 : 0),
-
-                      gridDelegate:
-                      const SliverGridDelegateWithFixedCrossAxisCount(
-                        crossAxisCount: 2,
-                        crossAxisSpacing: 15,
-                        mainAxisSpacing: 20,
-                        childAspectRatio: 0.60,
-                      ),
-
-                      itemBuilder: (context, index) {
-
-                        if (index >= books.length) {
-                          return const Center(
-                              child:
-                              CircularProgressIndicator());
+                    child: NotificationListener<
+                        ScrollNotification>(
+                      onNotification: (scroll) {
+                        if (scroll.metrics.pixels >
+                            scroll.metrics.maxScrollExtent - 200 &&
+                            hasMore &&
+                            !loading) {
+                          loadBooks();
                         }
-
-                        final b = books[index];
-
-                        return BookCard(
-                          bookID:b["_id"],
-                          title: b["title"] ?? "",
-                          author: (b["authors"] != null &&
-                              b["authors"].length > 0)
-                              ? b["authors"][0]["name"]
-                              : "Unknown",
-
-                          rating: (b["ratings"]?["average"]
-                              ?.toDouble() ??
-                              0.0),
-
-                          imageUrl: b["coverUrl"] ??
-                              "https://via.placeholder.com/200x300",
-
-                          isNew: b["isFeatured"] ?? false,
-                        );
+                        return true;
                       },
+
+                      child: GridView.builder(
+                        physics:
+                        const BouncingScrollPhysics(),
+                        itemCount:
+                        books.length + (hasMore ? 1 : 0),
+
+                        gridDelegate:
+                        const SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: 2,
+                          crossAxisSpacing: 15,
+                          mainAxisSpacing: 20,
+                          childAspectRatio: 0.60,
+                        ),
+
+                        itemBuilder: (context, index) {
+
+                          if (index >= books.length) {
+                            return const Center(
+                                child:
+                                CircularProgressIndicator());
+                          }
+
+                          final b = books[index];
+
+                          return BookCard(
+                            bookID:b["_id"],
+                            title: b["title"] ?? "",
+                            author: (b["authors"] != null &&
+                                b["authors"].length > 0)
+                                ? b["authors"][0]["name"]
+                                : "Unknown",
+
+                            rating: (b["ratings"]?["average"]
+                                ?.toDouble() ??
+                                0.0),
+
+                            imageUrl: b["coverUrl"] ??
+                                "https://via.placeholder.com/200x300",
+
+                            isNew: b["isFeatured"] ?? false,
+                          );
+                        },
+                      ),
                     ),
                   ),
                 ),
@@ -315,13 +330,19 @@ class CategoryTabs extends StatelessWidget {
   }
 }
 class HeaderSection extends StatelessWidget {
-  const HeaderSection({super.key});
+  final VoidCallback onRefresh;
+
+  const HeaderSection({
+    super.key,
+    required this.onRefresh,
+  });
 
   @override
   Widget build(BuildContext context) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
+
         const Text(
           "Explore",
           style: TextStyle(
@@ -330,10 +351,27 @@ class HeaderSection extends StatelessWidget {
             color: Colors.white,
           ),
         ),
-        CircleAvatar(
-          radius: 20,
-          backgroundColor: Colors.amber[100],
-          backgroundImage: const NetworkImage("https://i.pravatar.cc/150?img=32"), // Dummy Avatar
+
+        Row(
+          children: [
+
+            // 🔁 REFRESH BUTTON
+            IconButton(
+              icon: const Icon(
+                Icons.refresh,
+                color: Colors.white,
+              ),
+              onPressed: onRefresh,
+            ),
+
+            const SizedBox(width: 8),
+
+            CircleAvatar(
+              radius: 20,
+              backgroundImage:
+              const NetworkImage("https://i.pravatar.cc/150?img=32"),
+            ),
+          ],
         ),
       ],
     );
