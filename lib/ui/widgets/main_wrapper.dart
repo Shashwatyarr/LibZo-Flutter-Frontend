@@ -1,3 +1,4 @@
+import 'package:bookproject/ui/screens/library.dart';
 import 'package:flutter/material.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 // Apne screens import karein
@@ -18,7 +19,7 @@ class _MainWrapperState extends State<MainWrapper> {
   // Pages ki list jo navigation se switch hogi
   final List<Widget> _pages = [
     const HomeScreen(),            // Index 0
-    const Center(child: Text("Search")), // Index 1 (placeholder)
+    const LibraryScreen(), // Index 1 (placeholder)
     const FeedScreen(),            // Index 2 (Video/Feed)
     const ProfileAnalyticsPage(),   // Index 3
   ];
