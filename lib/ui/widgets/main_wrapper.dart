@@ -1,4 +1,5 @@
 import 'package:bookproject/ui/screens/library.dart';
+import 'package:bookproject/ui/screens/main_profile.dart';
 import 'package:flutter/material.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 // Apne screens import karein
@@ -21,7 +22,7 @@ class _MainWrapperState extends State<MainWrapper> {
     const HomeScreen(),            // Index 0
     const LibraryScreen(), // Index 1 (placeholder)
     const FeedScreen(),            // Index 2 (Video/Feed)
-    const ProfileAnalyticsPage(),   // Index 3
+    const ProfileScreen(),   // Index 3
   ];
 
   @override

@@ -4,13 +4,17 @@ import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
 class ApiService {
-    //static const baseUrl="https://libzo-backend.onrender.com";
+
   static const baseUrl = "http://10.0.2.2:5000";
+  // static const baseUrl="https://libzo-backend.onrender.com";
+
+  // ================= TOKEN =================
   static Future<String?> getToken() async {
     final prefs = await SharedPreferences.getInstance();
     return prefs.getString("token");
   }
 
+  // ================= GET FEED =================
   static Future<List> getFeed() async {
     final token = await getToken();
 
@@ -38,15 +42,12 @@ class ApiService {
     }
   }
 
-
-
-
+  // ================= CREATE POST =================
   static Future<void> createPost({
     required String text,
     required List<File> images,
   }) async {
 
-    // ---------- VALIDATIONS ----------
     if (text.trim().isEmpty) {
       throw Exception("Text is mandatory");
     }
@@ -61,7 +62,6 @@ class ApiService {
         throw Exception("Each image must be ≤ 5MB");
       }
     }
-    // --------------------------------
 
     try {
       final token = await getToken();
@@ -97,15 +97,20 @@ class ApiService {
     }
   }
 
+  // ================= 🔥 TOGGLE LIKE (REAL) =================
+  static Future<bool> toggleLike(String postId) async {
 
-  static Future likePost(String postId) async {
-    print("like");
-    final token=await getToken();
-    await http.post(
+    final token = await getToken();
+
+    final res = await http.post(
       Uri.parse("$baseUrl/posts/like/$postId"),
       headers: {
         "Authorization": "Bearer $token",
       },
     );
+
+    // 200 = toggled successfully
+    return res.statusCode == 200;
   }
+
 }
