@@ -32,30 +32,57 @@ class _EditProfilePageState extends State<EditProfilePage> {
     loadProfile();
   }
 
-  Future<void> loadProfile()async{
+  Future<void> loadProfile() async {
     try {
       final userId = await AuthApi.getUserId();
-      print("USER ID: $userId");
 
-      final token = await AuthApi.getToken();
-      print("TOKEN: $token");
-      final res = await ProfileApi.getMyProfile(userId);
-      final user = res["data"];
+      final res = await ProfileApi.getUserProfile(userId!);
+
+      final user = res;
 
       fullNamectrl.text = user["fullName"] ?? "";
       userNamectrl.text = user["username"] ?? "";
+
+      // 👉 MAIN FIX HERE
       bioctrl.text = user["profile"]?["bio"] ?? "";
       locationctrl.text = user["profile"]?["location"] ?? "";
+
       _readingGoal =
           (user["readingPreferences"]?["readingGoalPerYear"] ?? 8).toDouble();
+
       _kindleSync =
           user["integrations"]?["kindleConnected"] ?? false;
-      profileImageUrl=user["profile"]?["profileImage"];
-      setState(() => loading = false);
+
+      profileImageUrl = user["profile"]?["profileImage"];
+
+      setState(() {
+        fullNamectrl.text = user["fullName"] ?? "";
+        userNamectrl.text = user["username"] ?? "";
+
+        bioctrl.text = user["profile"]?["bio"] ?? "";
+        locationctrl.text = user["profile"]?["location"] ?? "";
+
+        _readingGoal =
+            (user["readingPreferences"]?["readingGoalPerYear"] ?? 8).toDouble();
+
+        _kindleSync =
+            user["integrations"]?["kindleConnected"] ?? false;
+
+        profileImageUrl = user["profile"]?["profileImage"];
+
+        loading = false;
+      });
+      print("RAW RESPONSE: $res");
+      print("USER OBJECT: $user");
+      print("BIO VALUE: ${user["profile"]?["bio"]}");
+
+
     } catch (e) {
+      print("LOAD ERROR: $e");
       setState(() => loading = false);
     }
   }
+
   Future<void> pickProfileImage() async {
     final picker = ImagePicker();
     final picked = await picker.pickImage(source: ImageSource.gallery);
@@ -71,8 +98,11 @@ class _EditProfilePageState extends State<EditProfilePage> {
       await ProfileApi.updateProfile({
         "fullName": fullNamectrl.text,
         "username": userNamectrl.text,
+
+        // ✅ MAIN FIX – ROOT LEVEL KEYS
         "profile.bio": bioctrl.text,
         "profile.location": locationctrl.text,
+
         "readingPreferences.readingGoalPerYear": _readingGoal.toInt(),
         "integrations.kindleConnected": _kindleSync,
       });
@@ -85,8 +115,15 @@ class _EditProfilePageState extends State<EditProfilePage> {
     }
   }
 
+
   @override
   Widget build(BuildContext context) {
+    if (loading) {
+      return const Scaffold(
+        backgroundColor: Color(0xFF070B14),
+        body: Center(child: CircularProgressIndicator()),
+      );
+    }
     return Scaffold(
       backgroundColor: const Color(0xFF070B14),
       body: AppBackground2(
@@ -167,6 +204,10 @@ class _EditProfilePageState extends State<EditProfilePage> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
+          GestureDetector(
+            onTap: ()=>Navigator.pop(context),
+            child: Icon(Icons.arrow_back_ios_new),
+          ),
           const Text("Edit Profile", style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
 
         ],

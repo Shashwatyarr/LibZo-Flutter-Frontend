@@ -104,16 +104,12 @@ class _ProfileAnalyticsPageState extends State<ProfileAnalyticsPage> {
                       ),
                       const SizedBox(height: 16),
                       Text(
-                        (profile?["bio"] == null || profile!["bio"].toString().trim().isEmpty)
+                        (profile?["profile"]?["bio"] == null ||
+                            profile!["profile"]["bio"].toString().trim().isEmpty)
                             ? "No bio added yet"
-                            : profile!["bio"].toString(),
-                        textAlign: TextAlign.center,
-                        style: const TextStyle(
-                          color: Colors.white70,
-                          fontSize: 13,
-                          height: 1.5,
-                        ),
-                      ),
+                            : profile!["profile"]["bio"].toString(),
+                      )
+
                     ],
                   ),
                 ),
@@ -158,11 +154,25 @@ class _ProfileAnalyticsPageState extends State<ProfileAnalyticsPage> {
                       Wrap(
                         spacing: 8,
                         runSpacing: 8,
-                        children: (profile?["profile"]?["favoriteGenres"] ?? [])
-                            .map<Widget>((g) => _buildGenreChip(g))
-                            .toList(),
-                  ),
-            ],
+                        children: (() {
+                          final genres = profile?["profile"]?["favoriteGenres"];
+
+                          if (genres is List && genres.isNotEmpty) {
+                            return genres
+                                .map<Widget>((g) => _buildGenreChip(g.toString()))
+                                .toList();
+                          }
+
+                          return [
+                            const Text(
+                              "No genres added",
+                              style: TextStyle(color: Colors.grey, fontSize: 12),
+                            )
+                          ];
+                        })(),
+                      ),
+
+                    ],
                 ),
                 ),
 
@@ -364,14 +374,19 @@ class _ProfileAnalyticsPageState extends State<ProfileAnalyticsPage> {
             padding: EdgeInsets.all(4.0),
             child: CircleAvatar(
               radius: 46,
-              // backgroundImage: profile?["profile"]?["profileImage"] != null
-              //     ? NetworkImage({profile!["profile"]["profileImage"]},
-              // )
-                  //: null,
-              child: profile?["profile"]?["profileImage"] == null
+              backgroundImage: (profile?["profile"]?["profileImage"] != null &&
+                  profile!["profile"]["profileImage"].toString().isNotEmpty)
+                  ? NetworkImage(
+                  "http://10.0.2.2:5000${profile!["profile"]["profileImage"]}"
+              )
+                  : null,
+
+              child: (profile?["profile"]?["profileImage"] == null ||
+                  profile!["profile"]["profileImage"].toString().isEmpty)
                   ? const Icon(Icons.person, size: 60)
                   : null,
             ),
+
           ),
         ),
         Positioned(
