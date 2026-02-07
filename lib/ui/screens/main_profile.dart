@@ -196,7 +196,7 @@ class ModernProfileHeader extends StatelessWidget {
       padding: const EdgeInsets.all(16),
 
       decoration: BoxDecoration(
-        color: const Color(0xff16181C),
+        color: const Color(0xff16181C).withOpacity(0.5),
         borderRadius: BorderRadius.circular(20),
         border: Border.all(color: Colors.white10),
       ),
@@ -314,9 +314,9 @@ class ActionButtons extends StatelessWidget {
       width: double.infinity,
       child: isMe
           ? OutlinedButton.icon(
-        onPressed: () {},
-        icon: const Icon(Icons.edit, color: Colors.white),
-        label: const Text("Edit Profile",
+        onPressed: ()=>Navigator.pushReplacementNamed(context,"/profileanalytics"),
+        icon: const Icon(Icons.bar_chart, color: Colors.white),
+        label: const Text("Profile Analytics",
             style: TextStyle(color: Colors.white)),
       )
           : ElevatedButton(
@@ -363,7 +363,7 @@ class ModernPostCard extends StatelessWidget {
       padding: const EdgeInsets.all(14),
 
       decoration: BoxDecoration(
-        color: const Color(0xff16181C),
+        color: const Color(0xff16181C).withOpacity(0.5),
         borderRadius: BorderRadius.circular(18),
         border: Border.all(color: Colors.white10),
       ),

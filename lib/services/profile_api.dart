@@ -10,11 +10,11 @@ class ProfileApi {
   static const String apiRoot = "http://10.0.2.2:5000/api/profile";
 
   // ================= GET MY PROFILE =================
-  static Future<Map<String, dynamic>> getMyProfile() async {
+  static Future<Map<String, dynamic>> getMyProfile(String? userId) async {
     final headers = await AuthApi.getAuthHeaders();
 
     final response = await http.get(
-      Uri.parse("$apiRoot/me"),
+      Uri.parse("$apiRoot/"),
       headers: headers,
     );
 

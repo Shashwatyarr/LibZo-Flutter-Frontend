@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:image_picker/image_picker.dart';
 
+import '../../services/auth_api.dart';
 import '../../services/profile_api.dart';
 
 class EditProfilePage extends StatefulWidget {
@@ -33,7 +34,12 @@ class _EditProfilePageState extends State<EditProfilePage> {
 
   Future<void> loadProfile()async{
     try {
-      final res = await ProfileApi.getMyProfile();
+      final userId = await AuthApi.getUserId();
+      print("USER ID: $userId");
+
+      final token = await AuthApi.getToken();
+      print("TOKEN: $token");
+      final res = await ProfileApi.getMyProfile(userId);
       final user = res["data"];
 
       fullNamectrl.text = user["fullName"] ?? "";

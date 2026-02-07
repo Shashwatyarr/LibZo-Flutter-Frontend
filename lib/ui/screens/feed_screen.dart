@@ -219,8 +219,14 @@ class _FeedScreenState extends State<FeedScreen> {
                     color: const Color(0xFF2C2C2C),
                     onSelected: (val) { if (val == 'delete') _deletePost(id); },
                     itemBuilder: (context) => [
-                      if (isMyPost) const PopupMenuItem(value: 'delete', child: Text("Delete", style: TextStyle(color: Colors.redAccent))),
-                      const PopupMenuItem(value: 'profile', child: Text("View Profile", style: TextStyle(color: Colors.white))),
+                      if (isMyPost) const PopupMenuItem(value: 'delete', child: Row(children:[
+                        Icon(Icons.delete,color: Colors.redAccent,),
+                        SizedBox(width: 10,),
+                        Text("Delete", style: TextStyle(color: Colors.redAccent))])),
+                      const PopupMenuItem(value: 'profile', child: Row(children:[
+                        Icon(Icons.account_circle,color: Colors.white,),
+                        SizedBox(width: 10,),
+                        Text("View Profile", style: TextStyle(color: Colors.white))])),
                     ],
                   ),
                 ],

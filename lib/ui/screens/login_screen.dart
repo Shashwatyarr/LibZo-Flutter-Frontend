@@ -95,17 +95,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           fillColor: inputFillColor.withOpacity(0.4),
                         ),
 
-                        const SizedBox(height: 20),
 
-// Telegram Username
-                        _buildLabel("TELEGRAM USERNAME"),
-                        const SizedBox(height: 8),
-                        _buildTextField(
-                          controller: _telegramController,
-                          hintText: "@your_telegram",
-                          icon: Icons.telegram,
-                          fillColor: inputFillColor.withOpacity(0.4),
-                        ),
                         const SizedBox(height: 20),
 
                         // Password Field
@@ -144,7 +134,19 @@ class _LoginScreenState extends State<LoginScreen> {
                             ),
                           ),
                         ),
+                        const SizedBox(height: 10),
 
+// Telegram Username
+                        _buildLabel("TELEGRAM USERNAME"),
+                        const SizedBox(height: 8),
+                        _buildTextField(
+                          controller: _telegramController,
+                          hintText: "@your_telegram",
+                          icon: Icons.telegram,
+                          fillColor: inputFillColor.withOpacity(0.4),
+                          iconColor: Colors.blue,
+                          BorderColor: Colors.blue,
+                        ),
                         const SizedBox(height: 24),
 
                         // Log In Button
@@ -237,64 +239,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
                         const SizedBox(height: 24),
 
-                        // Divider
-                        Row(
-                          children: [
-                            const Expanded(child: Divider(color: Colors.white12)),
-                            Padding(
-                              padding: const EdgeInsets.symmetric(horizontal: 12),
-                              child: Text(
-                                "OR CONTINUE WITH",
-                                style: TextStyle(
-                                    fontSize: 10,
-                                    color: Colors.white.withOpacity(0.3),
-                                    fontWeight: FontWeight.bold
-                                ),
-                              ),
-                            ),
-                            const Expanded(child: Divider(color: Colors.white12)),
-                          ],
-                        ),
 
-                        const SizedBox(height: 24),
-
-                        // Google Button
-                        SizedBox(
-                          width: double.infinity,
-                          height: 50,
-                          child: ElevatedButton(
-                            onPressed: () async {final user = await authService.signInWithGoogle();
-                              if (user != null && mounted) {
-                                Navigator.pushReplacementNamed(context, "/home");
-                              }
-                              print("Google Sign In Pressed");
-                            },
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.white.withOpacity(0.05), // Glassy dark
-                              foregroundColor: Colors.white,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12),
-                                side: BorderSide(color: Colors.white.withOpacity(0.1)),
-                              ),
-                              elevation: 0,
-                            ),
-                              child: Row(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  SvgPicture.asset(
-                                    'assets/images/google.svg',
-                                    width: 24,
-                                    height: 24,
-                                  ),
-                                  const SizedBox(width: 8),
-                                  const Text(
-                                    "Google",
-                                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-                                  ),
-                                ],
-                              )
-                          ),
-                        ),
                       ],
                     ),
                   ),
@@ -356,6 +301,8 @@ class _LoginScreenState extends State<LoginScreen> {
     bool isPassword = false,
     bool isPasswordVisible = false,
     VoidCallback? onVisibilityToggle,
+    Color? iconColor,
+    Color? BorderColor,
   }) {
     return Container(
       decoration: BoxDecoration(
@@ -369,12 +316,12 @@ class _LoginScreenState extends State<LoginScreen> {
         decoration: InputDecoration(
           hintText: hintText,
           hintStyle: TextStyle(color: Colors.white.withOpacity(0.3)),
-          prefixIcon: Icon(icon, color: Colors.white54, size: 20),
+          prefixIcon: Icon(icon, color: iconColor==null?Colors.white38:iconColor, size: 20),
           suffixIcon: isPassword
               ? IconButton(
             icon: Icon(
               isPasswordVisible ? Icons.visibility : Icons.visibility_off,
-              color: Colors.white38,
+              color:Colors.white38,
               size: 20,
             ),
             onPressed: onVisibilityToggle,
@@ -382,7 +329,7 @@ class _LoginScreenState extends State<LoginScreen> {
               : null,
           enabledBorder: OutlineInputBorder(
             borderSide: BorderSide(
-              color: Colors.white.withOpacity(0.1),
+              color: BorderColor==null?Colors.white.withOpacity(0.3):BorderColor,
               width: 1,
             ),
             borderRadius: BorderRadius.circular(12),
@@ -390,7 +337,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
           focusedBorder: OutlineInputBorder(
             borderSide: BorderSide(
-              color: Colors.white.withOpacity(0.3),
+              color: BorderColor==null?Colors.white.withOpacity(0.3):BorderColor,
               width: 1.4,
             ),
             borderRadius: BorderRadius.circular(12),

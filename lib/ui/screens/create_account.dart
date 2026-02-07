@@ -143,6 +143,8 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
                             hintText: "your_telegram_username",
                             icon: Icons.telegram,
                             fillColor: inputFillColor.withOpacity(0.4),
+                            iconColor: Colors.blue,
+                            borderColor: Colors.blue,
                           ),
 
                           const SizedBox(height: 16),
@@ -301,6 +303,8 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
     bool isPassword = false,
     bool isPasswordVisible = false,
     VoidCallback? onVisibilityToggle,
+    Color? iconColor,
+    Color? borderColor,
   }) {
     return Container(
       decoration: BoxDecoration(
@@ -314,7 +318,7 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
         decoration: InputDecoration(
           hintText: hintText,
           hintStyle: TextStyle(color: Colors.white.withOpacity(0.3)),
-          prefixIcon: Icon(icon, color: Colors.white54, size: 20),
+          prefixIcon: Icon(icon, color: iconColor==null?Colors.white54:iconColor, size: 20),
           suffixIcon: isPassword
               ? IconButton(
             icon: Icon(
@@ -327,7 +331,7 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
               : null,
           enabledBorder: OutlineInputBorder(
             borderSide: BorderSide(
-              color: Colors.white.withOpacity(0.1),
+              color: borderColor==null?Colors.white.withOpacity(0.1):borderColor,
               width: 1,
             ),
             borderRadius: BorderRadius.circular(12),

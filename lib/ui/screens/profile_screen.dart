@@ -26,23 +26,36 @@ class _ProfileAnalyticsPageState extends State<ProfileAnalyticsPage> {
     loadProfile();
 }
 
-Future<void> loadProfile()async{
-  try{
-    final data=await ProfileApi.getMyProfile();
-    final percent=await ProfileApi.getProfileCompletion();
+  Future<void> loadProfile() async {
+    try {
+      print("🚀 Loading profile...");
 
-    setState(() {
-      profile = data["data"];
-      completion = percent;
-      loading = false;
-    });
+      final userId = await AuthApi.getUserId();
+      print("USER ID: $userId");
+
+      final token = await AuthApi.getToken();
+      print("TOKEN: $token");
+
+      final data = await ProfileApi.getUserProfile(userId!);
+      print("PROFILE RESPONSE: $data");
+
+      final percent = await ProfileApi.getProfileCompletion();
+      print("COMPLETION: $percent");
+
+      setState(() {
+        profile = data["user"] ?? data["data"] ?? data;
+        completion = percent;
+        loading = false;
+      });
+
+    } catch (e) {
+      print("❌ PROFILE ERROR: $e");
+
+      setState(() => loading = false);
+    }
   }
-  catch(err){
-    setState(() {
-      loading=false;
-    });
-  }
-}
+
+
 
   @override
   Widget build(BuildContext context) {
@@ -73,11 +86,12 @@ Future<void> loadProfile()async{
                     children: [
                       _buildAvatarSection(context),
                       const SizedBox(height: 12),
-                      Text("@"+profile?["username"] ?? "—",
+                    Text("@${profile?["username"] ?? "—"}",
                           style: const TextStyle(fontSize: 13, color: Colors.grey)),
-                      Text(profile?["fullName"] ?? "—",
+                      Text(profile?["fullName"]?.toString() ?? "—",
                           style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.white)),
-                      Text(profile?["profile"]?["location"] ?? "Unknown",
+                      Text(profile?["profile"]?["location"]?.toString() ?? "Unknown"
+                          ,
                           style: TextStyle(color: Colors.grey, fontSize: 12)),
                       const SizedBox(height: 12),
                       Row(
@@ -90,9 +104,15 @@ Future<void> loadProfile()async{
                       ),
                       const SizedBox(height: 16),
                       Text(
-                        profile?["profile"]?["bio"] ?? "No bio added yet",
+                        (profile?["bio"] == null || profile!["bio"].toString().trim().isEmpty)
+                            ? "No bio added yet"
+                            : profile!["bio"].toString(),
                         textAlign: TextAlign.center,
-                        style: const TextStyle(color: Colors.white70, fontSize: 13, height: 1.5),
+                        style: const TextStyle(
+                          color: Colors.white70,
+                          fontSize: 13,
+                          height: 1.5,
+                        ),
                       ),
                     ],
                   ),
@@ -299,6 +319,18 @@ Future<void> loadProfile()async{
         Row(
           mainAxisAlignment: MainAxisAlignment.start,
           children: [
+            GestureDetector(
+              onTap: () {
+                if (Navigator.canPop(context)) {
+                  Navigator.pop(context);
+                } else {
+                  // Optional: Redirect to home or show a message
+                  Navigator.pushNamed(context, '/home');
+                }
+              },
+              child: Icon(Icons.arrow_back_ios_new_rounded),
+            ),
+            SizedBox(width: 10,),
             const Text(
               'Profile Analytics',
               style: TextStyle(color: Color(0xFF40E0D0), fontSize: 24, fontWeight: FontWeight.bold),
@@ -332,11 +364,10 @@ Future<void> loadProfile()async{
             padding: EdgeInsets.all(4.0),
             child: CircleAvatar(
               radius: 46,
-              backgroundImage: profile?["profile"]?["profileImage"] != null
-                  ? NetworkImage(
-                "http://10.0.2.2:5000${profile!["profile"]["profileImage"]}",
-              )
-                  : null,
+              // backgroundImage: profile?["profile"]?["profileImage"] != null
+              //     ? NetworkImage({profile!["profile"]["profileImage"]},
+              // )
+                  //: null,
               child: profile?["profile"]?["profileImage"] == null
                   ? const Icon(Icons.person, size: 60)
                   : null,
@@ -354,7 +385,7 @@ Future<void> loadProfile()async{
               );
 
               if (updated == true) {
-                loadProfile();
+                await loadProfile();
               }
             },
             child: Container(
