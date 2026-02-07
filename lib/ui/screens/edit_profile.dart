@@ -33,7 +33,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
 
   Future<void> loadProfile()async{
     try {
-      final res = await ProfileApi.getProfile();
+      final res = await ProfileApi.getMyProfile();
       final user = res["data"];
 
       fullNamectrl.text = user["fullName"] ?? "";

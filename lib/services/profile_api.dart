@@ -1,37 +1,32 @@
 import 'dart:convert';
 import 'dart:io';
-
 import 'package:http/http.dart' as http;
 import 'package:http_parser/http_parser.dart';
-
 import 'auth_api.dart';
 
 class ProfileApi {
-  static const String baseUrl =
-      "http://10.0.2.2:5000/api/profile";
-  // static const String baseUrl =
-  //     "https://libzo-backend.onrender.com/api/profile";
 
-  /* ===================== GET PROFILE ===================== */
-  static Future<Map<String, dynamic>> getProfile() async {
+  // 🔥 MATCHES YOUR server.js
+  static const String apiRoot = "http://10.0.2.2:5000/api/profile";
+
+  // ================= GET MY PROFILE =================
+  static Future<Map<String, dynamic>> getMyProfile() async {
     final headers = await AuthApi.getAuthHeaders();
 
     final response = await http.get(
-      Uri.parse(baseUrl),
+      Uri.parse("$apiRoot/me"),
       headers: headers,
     );
 
     return _handleResponse(response);
   }
 
-  /* ===================== UPDATE PROFILE ===================== */
-  static Future<void> updateProfile(
-      Map<String, dynamic> updates,
-      ) async {
+  // ================= UPDATE PROFILE =================
+  static Future<void> updateProfile(Map<String, dynamic> updates) async {
     final headers = await AuthApi.getAuthHeaders();
 
     final response = await http.put(
-      Uri.parse("$baseUrl/update"),
+      Uri.parse("$apiRoot/update"),
       headers: headers,
       body: jsonEncode(updates),
     );
@@ -39,39 +34,14 @@ class ProfileApi {
     _handleResponse(response);
   }
 
-  /* ===================== PROFILE COMPLETION ===================== */
-  static Future<int> getProfileCompletion() async {
-    final headers = await AuthApi.getAuthHeaders();
-
-    final response = await http.get(
-      Uri.parse("$baseUrl/completion"),
-      headers: headers,
-    );
-
-    final data = _handleResponse(response);
-    return data["completion"] ?? 0;
-  }
-
-  /* ===================== USER LIBRARY ===================== */
-  static Future<List<dynamic>> getUserLibrary() async {
-    final headers = await AuthApi.getAuthHeaders();
-
-    final response = await http.get(
-      Uri.parse("$baseUrl/library"),
-      headers: headers,
-    );
-
-    final data = _handleResponse(response);
-    return data["data"] ?? [];
-  }
-
-  /* ===================== UPLOAD PROFILE PHOTO ===================== */
+  // ================= UPLOAD PHOTO =================
   static Future<String> uploadProfilePhoto(File imageFile) async {
+
     final token = await AuthApi.getToken();
 
     final request = http.MultipartRequest(
       "POST",
-      Uri.parse("$baseUrl/upload-photo"),
+      Uri.parse("$apiRoot/upload-photo"),
     );
 
     request.headers["Authorization"] = "Bearer $token";
@@ -84,26 +54,118 @@ class ProfileApi {
       ),
     );
 
-    final streamedResponse = await request.send();
-    final response = await http.Response.fromStream(streamedResponse);
+    final streamed = await request.send();
+    final response = await http.Response.fromStream(streamed);
 
     final data = jsonDecode(response.body);
 
-    if (response.statusCode >= 200 && response.statusCode < 300) {
+    if (response.statusCode >= 200 &&
+        response.statusCode < 300) {
       return data["profileImage"];
     } else {
       throw Exception(data["message"] ?? "Image upload failed");
     }
   }
 
-  /* ===================== RESPONSE HANDLER ===================== */
-  static Map<String, dynamic> _handleResponse(http.Response response) {
+  // ================= PROFILE COMPLETION =================
+  static Future<int> getProfileCompletion() async {
+
+    final headers = await AuthApi.getAuthHeaders();
+
+    final response = await http.get(
+      Uri.parse("$apiRoot/completion"),
+      headers: headers,
+    );
+
+    final data = _handleResponse(response);
+
+    return data["completion"] ?? 0;
+  }
+
+  // =====================================================
+  //               🔥 PUBLIC PROFILE
+  // =====================================================
+
+  static Future<Map<String, dynamic>> getUserProfile(String userId) async {
+
+    final headers = await AuthApi.getAuthHeaders();
+
+    final url = "$apiRoot/$userId";   // ✅ FIXED
+
+    print("==== PROFILE CALL ====");
+    print("URL: $url");
+    print("HEADERS: $headers");
+
+    final response = await http.get(
+      Uri.parse(url),
+      headers: headers,
+    );
+
+    print("STATUS: ${response.statusCode}");
+    print("BODY: ${response.body}");
+
+    final data = _handleResponse(response);
+
+    if (data is Map && data["user"] != null) {
+      return data["user"];
+    }
+
+    return data;
+  }
+
+  // =====================================================
+  //               USER POSTS
+  // =====================================================
+
+  static Future<List<dynamic>> getUserPosts(String userId) async {
+
+    final headers = await AuthApi.getAuthHeaders();
+
+    final url = "$apiRoot/posts/$userId";
+
+    print("POST URL: $url");
+
+    final response = await http.get(
+      Uri.parse(url),
+      headers: headers,
+    );
+
+    final data = _handleResponse(response);
+
+    if (data is List) return data;
+
+    if (data is Map && data.containsKey("posts")) {
+      return data["posts"];
+    }
+
+    return [];
+  }
+
+
+  // =====================================================
+  //              RESPONSE HANDLER
+  // =====================================================
+
+  static dynamic _handleResponse(http.Response response) {
+
+    if (response.body.trim().startsWith("<!DOCTYPE")) {
+      throw Exception(
+          "Server returned HTML instead of JSON – route mismatch"
+      );
+    }
+
+    if (response.body.isEmpty) return null;
+
     final data = jsonDecode(response.body);
 
-    if (response.statusCode >= 200 && response.statusCode < 300) {
+    if (response.statusCode >= 200 &&
+        response.statusCode < 300) {
       return data;
     } else {
-      throw Exception(data["message"] ?? "Something went wrong");
+      throw Exception(
+        data["message"] ??
+            "Something went wrong (Status: ${response.statusCode})",
+      );
     }
   }
 }

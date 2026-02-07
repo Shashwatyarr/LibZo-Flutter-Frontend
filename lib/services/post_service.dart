@@ -112,5 +112,28 @@ class ApiService {
     // 200 = toggled successfully
     return res.statusCode == 200;
   }
+  // ================= DELETE POST =================
+  static Future<bool> deletePost(String postId) async {
+    try {
+      final token = await getToken();
+
+      final res = await http.delete(
+        Uri.parse("$baseUrl/posts/delete/$postId"),
+        headers: {
+          "Authorization": "Bearer $token",
+        },
+      );
+
+      if (res.statusCode == 200) {
+        return true;
+      } else {
+        final data = jsonDecode(res.body);
+        throw Exception(data["message"] ?? "Delete failed");
+      }
+
+    } catch (e) {
+      throw Exception(e.toString().replaceAll("Exception:", "").trim());
+    }
+  }
 
 }

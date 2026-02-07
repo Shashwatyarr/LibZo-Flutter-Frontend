@@ -54,7 +54,6 @@ dependencies:
   cupertino_icons: ^1.0.8
   image_picker: ^1.0.7
   lucide_icons_flutter: ^3.1.9
-  vibration: ^1.8.4
   photo_view: ^0.15.0
 dev_dependencies:
   flutter_test:

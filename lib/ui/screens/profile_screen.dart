@@ -28,7 +28,7 @@ class _ProfileAnalyticsPageState extends State<ProfileAnalyticsPage> {
 
 Future<void> loadProfile()async{
   try{
-    final data=await ProfileApi.getProfile();
+    final data=await ProfileApi.getMyProfile();
     final percent=await ProfileApi.getProfileCompletion();
 
     setState(() {

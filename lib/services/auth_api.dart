@@ -124,6 +124,7 @@ class AuthApi {
     if (data["token"] != null && data["user"] != null) {
       await saveToken(data["token"]);
       await saveUserId(data["user"]["_id"]);
+      await saveUsername(username);
     }
     await saveUsername(username);
     return data;
@@ -205,4 +206,81 @@ class AuthApi {
       );
     }
   }
+
+
+  // ============================================================
+  //                    FOLLOW SYSTEM
+  // ============================================================
+
+  /* ===================== FOLLOW USER ===================== */
+  static Future<bool> followUser(String userId) async {
+
+    final headers = await getAuthHeaders();
+
+    final response = await http.post(
+      Uri.parse("http://10.0.2.2:5000/follow/$userId"),
+      headers: headers,
+    );
+
+    final data = _handleResponse(response);
+
+    return data["success"] == true;
+  }
+
+
+  /* ===================== UNFOLLOW USER ===================== */
+  static Future<bool> unfollowUser(String userId) async {
+
+    final headers = await getAuthHeaders();
+
+    final response = await http.post(
+      Uri.parse("http://10.0.2.2:5000/unfollow/$userId"),
+      headers: headers,
+    );
+
+    final data = _handleResponse(response);
+
+    return data["success"] == true;
+  }
+
+
+  /* ===================== GET FOLLOWERS ===================== */
+  static Future<List<dynamic>> getFollowers(String userId) async {
+
+    final response = await http.get(
+      Uri.parse("http://10.0.2.2:5000/followers/$userId"),
+    );
+
+    final data = _handleResponse(response);
+
+    return data["followers"] ?? [];
+  }
+
+
+  /* ===================== GET FOLLOWING ===================== */
+  static Future<List<dynamic>> getFollowing(String userId) async {
+
+    final response = await http.get(
+      Uri.parse("http://10.0.2.2:5000/following/$userId"),
+    );
+
+    final data = _handleResponse(response);
+
+    return data["following"] ?? [];
+  }
+
+
+  /* ===================== CHECK IS FOLLOWING ===================== */
+  static Future<bool> isFollowing(String targetUserId) async {
+
+    final myId = await getUserId();
+    if (myId == null) return false;
+
+    final followingList = await getFollowing(myId);
+
+    return followingList.any(
+          (user) => user["_id"] == targetUserId,
+    );
+  }
+
 }

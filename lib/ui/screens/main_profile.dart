@@ -1,393 +1,428 @@
+import 'package:bookproject/ui/widgets/app_background2.dart';
 import 'package:flutter/material.dart';
+import '../../services/auth_api.dart';
+import '../../services/profile_api.dart';
+import '../widgets/telegram_image.dart';
 
-class ProfileScreen extends StatelessWidget {
-  const ProfileScreen({super.key});
+class ProfileScreen extends StatefulWidget {
+  final String? userId;
+
+  const ProfileScreen({super.key, this.userId});
 
   @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios, size: 20),
-          onPressed: () {},
-        ),
-        title: const Text(
-          "libzo.curator",
-          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-        ),
-        centerTitle: true,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.more_horiz),
-            onPressed: () {},
-          ),
-        ],
-      ),
-      body: SingleChildScrollView(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const ProfileHeader(),
-            const SizedBox(height: 16),
-            const Padding(
-              padding: EdgeInsets.symmetric(horizontal: 16.0),
-              child: ProfileInfo(),
-            ),
-            const SizedBox(height: 20),
-            const Padding(
-              padding: EdgeInsets.symmetric(horizontal: 16.0),
-              child: ActionButtons(),
-            ),
-            const SizedBox(height: 24),
-            const CustomTabBar(),
-            const Divider(height: 1, color: Colors.white10),
-            const PostList(),
-          ],
-        ),
-      ),
-    );
-  }
+  State<ProfileScreen> createState() => _ProfileScreenState();
 }
 
-// --- WIDGETS ---
+class _ProfileScreenState extends State<ProfileScreen> {
+  bool loading = true;
 
-class ProfileHeader extends StatelessWidget {
-  const ProfileHeader({super.key});
+  Map<String, dynamic>? userProfile;
+  List userPosts = [];
+
+  String? currentUserId;
+  bool isMyProfile = false;
+  bool isFollowing = false;
+
+  final Color kAccent = const Color(0xFF00E676);
+  final Color kCard = const Color(0xff16181C);
+
+  @override
+  void initState() {
+    super.initState();
+    loadProfile();
+  }
+
+  Future<void> loadProfile() async {
+    if (!mounted) return;
+
+    setState(() => loading = true);
+
+    currentUserId = await AuthApi.getUserId();
+    String targetId = widget.userId ?? currentUserId ?? "";
+
+    if (targetId.isEmpty) {
+      setState(() => loading = false);
+      return;
+    }
+
+    try {
+      isMyProfile = currentUserId == targetId;
+
+      final profile = await ProfileApi.getUserProfile(targetId);
+      final posts = await ProfileApi.getUserPosts(targetId);
+
+      bool following = false;
+
+      if (!isMyProfile) {
+        following = await AuthApi.isFollowing(targetId);
+      }
+
+      if (mounted) {
+        setState(() {
+          userProfile = profile;
+          userPosts = posts;
+          isFollowing = following;
+          loading = false;
+        });
+      }
+    } catch (e) {
+      setState(() => loading = false);
+    }
+  }
+
+  Future<void> _toggleFollow() async {
+    if (userProfile == null) return;
+
+    String targetId = userProfile!['_id'];
+    bool old = isFollowing;
+
+    setState(() => isFollowing = !old);
+
+    bool success = !old
+        ? await AuthApi.followUser(targetId)
+        : await AuthApi.unfollowUser(targetId);
+
+    if (!success && mounted) {
+      setState(() => isFollowing = old);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-      child: Row(
-        children: [
-          // Avatar with Gradient Border
-          Container(
-            padding: const EdgeInsets.all(3),
-            decoration: const BoxDecoration(
-              shape: BoxShape.circle,
-              gradient: LinearGradient(
-                colors: [Colors.cyanAccent, Colors.blueAccent],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-            ),
-            child: const CircleAvatar(
-              radius: 40,
-              backgroundImage: NetworkImage('https://i.pravatar.cc/150?img=11'), // Placeholder Image
-            ),
-          ),
-          const SizedBox(width: 24),
-          // Stats Row
-          Expanded(
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: const [
-                StatItem(label: "Shared", count: "428"),
-                StatItem(label: "Followers", count: "12.4k"),
-                StatItem(label: "Following", count: "892"),
+    if (loading) {
+      return const Scaffold(
+        backgroundColor: Colors.black,
+        body: Center(
+          child: CircularProgressIndicator(color: Color(0xFF00E676)),
+        ),
+      );
+    }
+
+    if (userProfile == null) {
+      return const Scaffold(
+        backgroundColor: Colors.black,
+        body: Center(
+          child: Text("User not found",
+              style: TextStyle(color: Colors.white)),
+        ),
+      );
+    }
+
+    return Scaffold(
+      backgroundColor: Colors.black,
+
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        title: Text(
+          "@${userProfile?['username']}",
+          style: const TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+              color: Colors.white),
+        ),
+        centerTitle: true,
+      ),
+
+      body: AppBackground2(
+        child: RefreshIndicator(
+          onRefresh: loadProfile,
+          color: kAccent,
+
+          child: SingleChildScrollView(
+            physics: const AlwaysScrollableScrollPhysics(),
+
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                ModernProfileHeader(user: userProfile!),
+
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: ActionButtons(
+                    isMe: isMyProfile,
+                    isFollowing: isFollowing,
+                    onFollowTap: _toggleFollow,
+                  ),
+                ),
+
+                const SizedBox(height: 20),
+
+                const Divider(color: Colors.white10),
+
+                if (userPosts.isEmpty)
+                  const Padding(
+                    padding: EdgeInsets.only(top: 80),
+                    child: Center(
+                      child: Text(
+                        "No posts yet.",
+                        style: TextStyle(color: Colors.grey),
+                      ),
+                    ),
+                  )
+                else
+                  ListView.builder(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    itemCount: userPosts.length,
+                    itemBuilder: (c, i) =>
+                        ModernPostCard(post: userPosts[i]),
+                  ),
+
+                const SizedBox(height: 40),
               ],
             ),
           ),
-          const SizedBox(width: 16),
+        ),
+      ),
+    );
+  }
+}
+
+// ======================================================
+//                    PROFILE HEADER
+// ======================================================
+
+class ModernProfileHeader extends StatelessWidget {
+  final Map user;
+
+  const ModernProfileHeader({super.key, required this.user});
+
+  @override
+  Widget build(BuildContext context) {
+    String avatarText = (user['username'] ?? "U")[0].toUpperCase();
+
+    return Container(
+      margin: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(16),
+
+      decoration: BoxDecoration(
+        color: const Color(0xff16181C),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: Colors.white10),
+      ),
+
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              CircleAvatar(
+                radius: 40,
+                backgroundColor: Colors.white12,
+                child: Text(
+                  avatarText,
+                  style: const TextStyle(
+                      fontSize: 32,
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold),
+                ),
+              ),
+
+              const SizedBox(width: 20),
+
+              Expanded(
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceAround,
+                  children: [
+                    _Stat(label: "Posts",
+                        value: "${user['postsCount'] ?? 0}"),
+
+                    _Stat(label: "Followers",
+                        value: "${(user['followers'] ?? []).length}"),
+
+                    _Stat(label: "Following",
+                        value: "${(user['following'] ?? []).length}"),
+                  ],
+                ),
+              ),
+            ],
+          ),
+
+          const SizedBox(height: 14),
+
+          Row(
+            children: [
+              Text(
+                user['fullName'] ?? user['username'],
+                style: const TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white),
+              ),
+
+              const SizedBox(width: 6),
+
+              const Icon(Icons.verified,
+                  color: Color(0xFF00E676), size: 18),
+            ],
+          ),
+
+          const SizedBox(height: 6),
+
+          Text(
+            user['bio'] ?? "No bio available.",
+            style: const TextStyle(color: Colors.grey),
+          ),
         ],
       ),
     );
   }
 }
 
-class StatItem extends StatelessWidget {
+class _Stat extends StatelessWidget {
   final String label;
-  final String count;
+  final String value;
 
-  const StatItem({super.key, required this.label, required this.count});
+  const _Stat({required this.label, required this.value});
 
   @override
   Widget build(BuildContext context) {
     return Column(
       children: [
-        Text(
-          count,
-          style: const TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-            color: Colors.white,
-          ),
-        ),
-        const SizedBox(height: 4),
-        Text(
-          label,
-          style: const TextStyle(
-            fontSize: 12,
-            color: Colors.grey,
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class ProfileInfo extends StatelessWidget {
-  const ProfileInfo({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text(
-          "Alex Sterling",
-          style: TextStyle(
-            fontSize: 20,
-            fontWeight: FontWeight.bold,
-            color: Colors.white,
-          ),
-        ),
-        const SizedBox(height: 6),
-        RichText(
-          text: const TextSpan(
-            style: TextStyle(color: Colors.grey, height: 1.4),
-            children: [
-              TextSpan(text: "Curating the best of modern sci-fi & cyberpunk literature 📚✨ "),
-              TextSpan(text: "Exploring digital worlds one page at a time."),
-            ],
-          ),
-        ),
-        const SizedBox(height: 8),
-        Row(
-          children: const [
-            Icon(Icons.location_on, size: 14, color: Colors.blueAccent),
-            SizedBox(width: 4),
-            Text(
-              "SAN FRANCISCO, CA",
-              style: TextStyle(
-                color: Colors.blueAccent,
-                fontSize: 12,
+        Text(value,
+            style: const TextStyle(
+                fontSize: 18,
                 fontWeight: FontWeight.bold,
-              ),
-            ),
-          ],
-        ),
+                color: Colors.white)),
+
+        Text(label,
+            style: const TextStyle(color: Colors.grey)),
       ],
     );
   }
 }
+
+// ======================================================
+//                  FOLLOW / EDIT BUTTON
+// ======================================================
 
 class ActionButtons extends StatelessWidget {
-  const ActionButtons({super.key});
+  final bool isMe;
+  final bool isFollowing;
+  final VoidCallback onFollowTap;
 
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Expanded(
-          child: OutlinedButton(
-            onPressed: () {},
-            style: OutlinedButton.styleFrom(
-              side: const BorderSide(color: Colors.white24),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-              padding: const EdgeInsets.symmetric(vertical: 12),
-            ),
-            child: const Text("Edit Profile", style: TextStyle(color: Colors.white)),
-          ),
-        ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: ElevatedButton.icon(
-            onPressed: () {},
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF1E3A8A).withOpacity(0.5), // गहरा नीला बटन
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-              padding: const EdgeInsets.symmetric(vertical: 12),
-              elevation: 0,
-            ),
-            icon: const Icon(Icons.bar_chart, size: 18),
-            label: const Text("Profile Analytics"),
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class CustomTabBar extends StatelessWidget {
-  const CustomTabBar({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-      children: [
-        _buildTab("Thoughts", isSelected: true),
-        _buildTab("Replies", isSelected: false),
-        _buildTab("Media", isSelected: false),
-      ],
-    );
-  }
-
-  Widget _buildTab(String text, {required bool isSelected}) {
-    return Column(
-      children: [
-        Padding(
-          padding: const EdgeInsets.symmetric(vertical: 12.0),
-          child: Text(
-            text,
-            style: TextStyle(
-              color: isSelected ? Colors.blueAccent : Colors.grey,
-              fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-            ),
-          ),
-        ),
-        if (isSelected)
-          Container(
-            height: 3,
-            width: 40,
-            decoration: const BoxDecoration(
-              color: Colors.blueAccent,
-              borderRadius: BorderRadius.vertical(top: Radius.circular(2)),
-            ),
-          )
-        else
-          const SizedBox(height: 3),
-      ],
-    );
-  }
-}
-
-class PostList extends StatelessWidget {
-  const PostList({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      children: const [
-        PostItem(
-          time: "2h",
-          text: "Just finished \"Neuromancer\" for the fifth time. The prose still hits like a high-speed data transfer. The way Gibson describes the sprawl is unmatched. 🌌💻",
-          hasImage: true,
-          imageUrl: "https://m.media-amazon.com/images/I/918s+91yC6L._AC_UF1000,1000_QL80_.jpg", // Example book cover
-          comments: "24",
-          retweets: "12",
-          likes: "156",
-        ),
-        Divider(color: Colors.white10),
-        PostItem(
-          time: "5h",
-          text: "Is it just me or is the hard sci-fi genre having a massive resurgence lately? Seeing so many incredible debut authors this month. Drop your recs below! 👇",
-          hasImage: false,
-          comments: "89",
-          retweets: "42",
-          likes: "312",
-        ),
-        Divider(color: Colors.white10),
-        PostItem(
-          time: "1d",
-          text: "Mini-Review: \"Project Hail Mary\" by Andy Weir. 🚀 Pure joy from start to finish. If you liked The Martian, you'll love this. Science, heart, and a very cool friend. 5/5 stars.",
-          hasImage: true,
-          imageUrl: "https://m.media-amazon.com/images/I/91tW1H1pZgL._AC_UF1000,1000_QL80_.jpg", // Example book cover
-          comments: "12",
-          retweets: "5",
-          likes: "85",
-        ),
-      ],
-    );
-  }
-}
-
-class PostItem extends StatelessWidget {
-  final String time;
-  final String text;
-  final bool hasImage;
-  final String? imageUrl;
-  final String comments, retweets, likes;
-
-  const PostItem({
+  const ActionButtons({
     super.key,
-    required this.time,
-    required this.text,
-    this.hasImage = false,
-    this.imageUrl,
-    required this.comments,
-    required this.retweets,
-    required this.likes,
+    required this.isMe,
+    required this.isFollowing,
+    required this.onFollowTap,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.all(16.0),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const CircleAvatar(
-            radius: 20,
-            backgroundImage: NetworkImage('https://i.pravatar.cc/150?img=11'),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    const Text(
-                      "Alex Sterling",
-                      style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
-                    ),
-                    const SizedBox(width: 4),
-                    Text(
-                      "@libzo.curator · $time",
-                      style: const TextStyle(color: Colors.grey, fontSize: 13),
-                    ),
-                    const Spacer(),
-                    const Icon(Icons.more_horiz, color: Colors.grey, size: 16),
-                  ],
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  text,
-                  style: const TextStyle(color: Colors.white, fontSize: 14, height: 1.4),
-                ),
-                if (hasImage && imageUrl != null) ...[
-                  const SizedBox(height: 12),
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(12),
-                    child: Image.network(
-                      imageUrl!,
-                      height: 180,
-                      width: double.infinity,
-                      fit: BoxFit.cover,
-                      errorBuilder: (context, error, stackTrace) =>
-                          Container(height: 180, color: Colors.grey[800], child: const Icon(Icons.broken_image)),
-                    ),
-                  ),
-                ],
-                const SizedBox(height: 12),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    _actionIcon(Icons.chat_bubble_outline, comments),
-                    _actionIcon(Icons.repeat, retweets),
-                    _actionIcon(Icons.favorite_border, likes),
-                    _actionIcon(Icons.share_outlined, ""),
-                  ],
-                ),
-              ],
-            ),
-          ),
-        ],
+    return SizedBox(
+      width: double.infinity,
+      child: isMe
+          ? OutlinedButton.icon(
+        onPressed: () {},
+        icon: const Icon(Icons.edit, color: Colors.white),
+        label: const Text("Edit Profile",
+            style: TextStyle(color: Colors.white)),
+      )
+          : ElevatedButton(
+        onPressed: onFollowTap,
+        style: ElevatedButton.styleFrom(
+          backgroundColor: isFollowing
+              ? const Color(0xff16181C)
+              : const Color(0xFF00E676),
+        ),
+        child: Text(
+          isFollowing ? "Following" : "Follow",
+          style: TextStyle(
+              color: isFollowing
+                  ? Colors.white
+                  : Colors.black),
+        ),
       ),
     );
   }
+}
 
-  Widget _actionIcon(IconData icon, String count) {
-    return Row(
-      children: [
-        Icon(icon, size: 18, color: Colors.grey),
-        if (count.isNotEmpty) ...[
-          const SizedBox(width: 4),
-          Text(count, style: const TextStyle(color: Colors.grey, fontSize: 12)),
+// ======================================================
+//                     POST CARD
+// ======================================================
+
+class ModernPostCard extends StatelessWidget {
+  final Map post;
+
+  const ModernPostCard({super.key, required this.post});
+
+  @override
+  Widget build(BuildContext context) {
+    final Map userObj =
+    post['userId'] is Map ? post['userId'] : post;
+
+    final String userName =
+        userObj['username'] ?? "User";
+
+    final String postText = post['text'] ?? "";
+    final List images = post['images'] ?? [];
+
+    return Container(
+      margin: const EdgeInsets.all(12),
+      padding: const EdgeInsets.all(14),
+
+      decoration: BoxDecoration(
+        color: const Color(0xff16181C),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: Colors.white10),
+      ),
+
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              CircleAvatar(
+                backgroundColor: Colors.white12,
+                child: Text(userName[0].toUpperCase()),
+              ),
+
+              const SizedBox(width: 10),
+
+              Text(userName,
+                  style: const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold)),
+
+              const Spacer(),
+
+              const Icon(Icons.more_vert, color: Colors.grey)
+            ],
+          ),
+
+          if (postText.isNotEmpty) ...[
+            const SizedBox(height: 10),
+            Text(postText,
+                style: const TextStyle(color: Colors.white)),
+          ],
+
+          if (images.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.only(top: 10),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(12),
+                child: TelegramImage(
+                    fileId: images[0]['file_id'],
+                    fit: BoxFit.cover),
+              ),
+            ),
+
+          const SizedBox(height: 10),
+
+          const Row(
+            mainAxisAlignment: MainAxisAlignment.spaceAround,
+            children: [
+              Icon(Icons.favorite_border, color: Colors.grey),
+              Icon(Icons.chat_bubble_outline,
+                  color: Colors.grey),
+              Icon(Icons.share, color: Colors.grey),
+              Icon(Icons.bookmark_border,
+                  color: Colors.grey),
+            ],
+          )
         ],
-      ],
+      ),
     );
   }
 }
