@@ -1,6 +1,7 @@
 import 'package:bookproject/services/auth_api.dart';
 import 'package:bookproject/ui/screens/book.dart';
 import 'package:bookproject/ui/screens/create_account.dart';
+import 'package:bookproject/ui/screens/create_club.dart';
 import 'package:bookproject/ui/screens/feed_screen.dart';
 import 'package:bookproject/ui/screens/library.dart';
 import 'package:bookproject/ui/screens/login_screen.dart';
@@ -55,6 +56,7 @@ class BookProject extends StatelessWidget {
         "/library":(context)=> const LibraryScreen(),
         "/book": (context)=>const BookDetailsScreen(),
         "/profileanalytics":(context)=>const ProfileAnalyticsPage(),
+        "/create-club":(context)=>const CreateClubScreen(),
       },
 
       onGenerateRoute: (settings) {

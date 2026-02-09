@@ -260,7 +260,7 @@ class ModernProfileHeader extends StatelessWidget {
           const SizedBox(height: 6),
 
           Text(
-            user['bio'] ?? "No bio available.",
+            user['profile']['bio'] ?? "No bio available.",
             style: const TextStyle(color: Colors.grey),
           ),
         ],
