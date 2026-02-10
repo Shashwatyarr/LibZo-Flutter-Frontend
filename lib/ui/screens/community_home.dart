@@ -130,6 +130,7 @@ class _BookClubsScreenState extends State<BookClubsScreen> {
                           },
 
                           child: _buildClubTile(
+                            context,
                             club,
                             club["name"],
                             club["currentBook"]?["title"] ?? "No Book",
@@ -430,7 +431,9 @@ class _BookClubsScreenState extends State<BookClubsScreen> {
 
                 // BUTTON
                 ElevatedButton(
-                  onPressed: onTap,
+                  onPressed:  () {
+    Navigator.of(context).pushNamed("/clubpage",arguments: club["_id"], );
+    },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.white12,
                   ),
@@ -475,6 +478,7 @@ class _BookClubsScreenState extends State<BookClubsScreen> {
   }
 }
 Widget _buildClubTile(
+    BuildContext context,
     Map<String, dynamic> club,
     String title,
     String currentBook,
@@ -654,18 +658,23 @@ Widget _buildClubTile(
         ),
 
         // ─────────── ARROW ───────────
-        Container(
-          padding: const EdgeInsets.all(6),
+        GestureDetector(
+         onTap: () {
+          Navigator.of(context).pushNamed("/clubpage",arguments: club["_id"], );
+        },
+          child: Container(
+            padding: const EdgeInsets.all(6),
 
-          decoration: BoxDecoration(
-            color: Colors.white.withOpacity(0.05),
-            borderRadius: BorderRadius.circular(8),
-          ),
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.05),
+              borderRadius: BorderRadius.circular(8),
+            ),
 
-          child: const Icon(
-            Icons.chevron_right,
-            color: Colors.white54,
-            size: 20,
+            child: const Icon(
+              Icons.chevron_right,
+              color: Colors.white54,
+              size: 20,
+            ),
           ),
         ),
       ],

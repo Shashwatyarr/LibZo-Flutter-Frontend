@@ -3,6 +3,7 @@ import 'package:bookproject/ui/widgets/app_background2.dart';
 import 'package:flutter/material.dart';
 
 import '../../services/library_services.dart';
+import '../widgets/AppBackground3.dart';
 import '../widgets/Book_card.dart';
 import '../widgets/app_background.dart';
 
@@ -115,7 +116,7 @@ class _LibraryScreenState extends State<LibraryScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: AppBackground(
+      body: AppBackground3(
         child: SafeArea(
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 20.0),
@@ -239,6 +240,13 @@ class CustomSearchBar extends StatelessWidget {
       decoration: BoxDecoration(
         color: const Color(0xFF1F232F),
         borderRadius: BorderRadius.circular(20),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.blue.withOpacity(0.5),
+              blurRadius: 9,
+              offset: const Offset(0, 0),
+            ),
+          ],
       ),
 
       child: TextField(
@@ -297,8 +305,8 @@ class CategoryTabs extends StatelessWidget {
                   gradient: isSelected
                       ? const LinearGradient(
                     colors: [
-                      Color(0xFF00C2FF),
-                      Color(0xFF00E5FF)
+                      Colors.deepPurple,
+                      Colors.tealAccent
                     ],
                   )
                       : null,
@@ -309,6 +317,7 @@ class CategoryTabs extends StatelessWidget {
 
                   borderRadius:
                   BorderRadius.circular(20),
+
                 ),
 
                 child: Center(
@@ -343,12 +352,26 @@ class HeaderSection extends StatelessWidget {
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
 
-        const Text(
-          "Explore",
-          style: TextStyle(
-            fontSize: 28,
-            fontWeight: FontWeight.bold,
-            color: Colors.white,
+        ShaderMask(
+          blendMode: BlendMode.srcIn,
+          shaderCallback: (bounds) {
+            return LinearGradient(
+              colors: [
+                //Colors.purple,
+                Colors.white,
+                Colors.blue,
+                //Colors.purple,
+              ],
+            ).createShader(
+              Rect.fromLTWH(0, 0, bounds.width, bounds.height),
+            );
+          },
+          child: const Text(
+            "Explore",
+            style: TextStyle(
+              fontSize: 28,
+              fontWeight: FontWeight.bold,
+            ),
           ),
         ),
 
@@ -366,10 +389,22 @@ class HeaderSection extends StatelessWidget {
 
             const SizedBox(width: 8),
 
-            CircleAvatar(
-              radius: 20,
-              backgroundImage:
-              const NetworkImage("https://i.pravatar.cc/150?img=32"),
+            Container(
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(20),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.blue.withOpacity(0.5),
+                    blurRadius: 10,
+                    offset: const Offset(0, 0),
+                  ),
+                ],
+              ),
+              child: CircleAvatar(
+                radius: 20,
+                backgroundImage:
+                const NetworkImage("https://i.pravatar.cc/150?img=32"),
+              ),
             ),
           ],
         ),

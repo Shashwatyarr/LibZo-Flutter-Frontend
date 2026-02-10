@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:io';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -159,37 +160,52 @@ class CommunityService {
 
   // ================= CREATE POST =================
 
-  static Future<Map<String, dynamic>> createPost({
+  static Future<Map<String, dynamic>> createClubPostWithImage({
     required String clubId,
     required String content,
-    String type = "text",
-    String image = "",
+    required String type,
+    File? imageFile,
   }) async {
-    try {
-      final headers = await getHeaders();
 
-      final res = await http.post(
+    try {
+      final token = await getToken();
+
+      var request = http.MultipartRequest(
+        "POST",
         Uri.parse("$baseUrl/$clubId/posts"),
-        headers: headers,
-        body: jsonEncode({
-          "type": type,
-          "content": content,
-          "image": image,
-        }),
       );
 
-      final data = jsonDecode(res.body);
+      request.headers["Authorization"] = "Bearer $token";
 
-      if (res.statusCode == 200 || res.statusCode == 201) {
-        return data;
-      } else {
-        throw Exception(data["message"] ?? "Post failed");
+      request.fields["content"] = content;
+      request.fields["type"] = type;
+
+      // ───── IMAGE ATTACH ─────
+      if (imageFile != null) {
+        request.files.add(
+          await http.MultipartFile.fromPath(
+            "images",
+            imageFile.path,
+          ),
+        );
       }
+
+      final streamed = await request.send();
+      final response = await http.Response.fromStream(streamed);
+
+      final data = jsonDecode(response.body);
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        return data;
+      }
+
+      throw Exception(data["message"] ?? "Post failed");
 
     } catch (e) {
       throw Exception("Create Post Error: $e");
     }
   }
+
 
   // ================= GET POSTS =================
 
