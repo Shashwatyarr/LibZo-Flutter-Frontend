@@ -24,7 +24,7 @@ class _ClubCreatepostState extends State<ClubCreatepost> {
 
   final TextEditingController _content = TextEditingController();
 
-  String postType = "discussion";
+  String postType = "text";
 
   File? selectedImage;
 
@@ -242,10 +242,10 @@ class _ClubCreatepostState extends State<ClubCreatepost> {
                 child: Row(
                   children: [
 
-                    _chip("Discussion", "discussion"),
-                    _chip("Review", "review"),
-                    _chip("Spoiler", "spoiler"),
-                    _chip("Theory", "theory"),
+                    _chip("Text", "text"),
+                    _chip("Image", "image"),
+                    _chip("Quote", "quote"),
+
                   ],
                 ),
               ),

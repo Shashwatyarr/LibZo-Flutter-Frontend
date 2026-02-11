@@ -1,4 +1,5 @@
 import 'package:bookproject/services/auth_api.dart';
+import 'package:bookproject/ui/screens/Club_joinRequest.dart';
 import 'package:bookproject/ui/screens/book.dart';
 import 'package:bookproject/ui/screens/club_createpost.dart';
 import 'package:bookproject/ui/screens/club_page.dart';
@@ -59,6 +60,14 @@ class BookProject extends StatelessWidget {
         "/book": (context) => const BookDetailsScreen(),
         "/profileanalytics": (context) => const ProfileAnalyticsPage(),
         "/create-club": (context) => const CreateClubScreen(),
+        "/club-requests":(context){
+          final args = ModalRoute.of(context)!.settings.arguments
+          as Map<String, dynamic>;
+          return JoinRequestsPage(
+            clubId: args["clubId"],
+            clubName: args["clubName"],
+          );
+        },
         "/club-createpost": (context) {
 
           final args = ModalRoute.of(context)!.settings.arguments
