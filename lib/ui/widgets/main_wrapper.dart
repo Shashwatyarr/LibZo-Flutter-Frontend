@@ -8,6 +8,9 @@ import 'package:bookproject/ui/screens/home_screen.dart';
 import 'package:bookproject/ui/screens/feed_screen.dart';
 import 'package:bookproject/ui/screens/profile_screen.dart';
 
+import 'mian_navigation_controller.dart';
+
+
 class MainWrapper extends StatefulWidget {
   const MainWrapper({super.key});
 
@@ -17,6 +20,8 @@ class MainWrapper extends StatefulWidget {
 
 class _MainWrapperState extends State<MainWrapper> {
   int _selectedIndex = 0;
+  final MainNavigationController _navController =
+  MainNavigationController();
 
   // Pages ki list jo navigation se switch hogi
   final List<Widget> _pages = [
@@ -31,10 +36,16 @@ class _MainWrapperState extends State<MainWrapper> {
     return Scaffold(
       backgroundColor: const Color(0xFF070B14),
       // IndexedStack state maintain rakhta hai (scroll position change nahi hogi)
-      body: IndexedStack(
-        index: _selectedIndex,
-        children: _pages,
+      body: AnimatedBuilder(
+        animation: _navController,
+        builder: (context, _) {
+          return IndexedStack(
+            index: _navController.currentIndex,
+            children: _pages,
+          );
+        },
       ),
+
 
       floatingActionButton: _buildCenterFab(),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
@@ -71,16 +82,15 @@ class _MainWrapperState extends State<MainWrapper> {
       child: IconButton(
         icon: const Icon(Icons.add, color: Colors.black, size: 28),
         onPressed: () {
-          // Yahan 'Add' action handle karein
         },
       ),
     );
   }
 
   Widget _buildNavItem(IconData icon, int index, {bool showDot = false}) {
-    bool isActive = _selectedIndex == index;
+    bool isActive = _navController.currentIndex == index;
     return InkWell(
-      onTap: () => setState(() => _selectedIndex = index),
+      onTap: () => _navController.changeIndex(index),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [

@@ -5,9 +5,9 @@ import 'package:http_parser/http_parser.dart';
 import 'auth_api.dart';
 
 class ProfileApi {
-
-  // 🔥 MATCHES YOUR server.js
   static const String apiRoot = "http://10.0.2.2:5000/api/profile";
+  // static const String apiRoot =
+  //     "https://libzo-backend.onrender.com/api/profile";
 
   // ================= GET MY PROFILE =================
   static Future<Map<String, dynamic>> getMyProfile(String? userId) async {

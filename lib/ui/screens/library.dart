@@ -1,5 +1,6 @@
 import 'package:bookproject/services/library_services.dart';
 import 'package:bookproject/ui/widgets/app_background2.dart';
+import 'package:bookproject/ui/widgets/mian_navigation_controller.dart';
 import 'package:flutter/material.dart';
 
 import '../../services/library_services.dart';
@@ -400,10 +401,13 @@ class HeaderSection extends StatelessWidget {
                   ),
                 ],
               ),
-              child: CircleAvatar(
-                radius: 20,
-                backgroundImage:
-                const NetworkImage("https://i.pravatar.cc/150?img=32"),
+              child: GestureDetector(
+                onTap:()=>MainNavigationController().goToProfile(),
+                child: CircleAvatar(
+                  radius: 20,
+                  backgroundImage:
+                  const NetworkImage("https://i.pravatar.cc/150?img=32"),
+                ),
               ),
             ),
           ],

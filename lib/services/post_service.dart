@@ -15,14 +15,14 @@ class ApiService {
   }
 
   // ================= GET FEED =================
-  static Future<List> getFeed() async {
+  static Future<List> getFeed({int page = 1}) async {
     final token = await getToken();
 
     final res = await http.get(
-      Uri.parse("$baseUrl/posts/feed"),
-      headers: {
-        "Authorization": "Bearer $token",
-      },
+      Uri.parse("$baseUrl/posts/feed?page=$page"),
+      // headers: {
+      //   "Authorization": "Bearer $token",
+      // },
     );
 
     if (res.statusCode == 200) {

@@ -8,6 +8,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 class CommunityService {
 
   static const String baseUrl = "http://10.0.2.2:5000/api/clubs";
+  // static const String baseUrl =
+  //     "https://libzo-backend.onrender.com/api/clubs";
   static String getCoverUrl(String fileId) {
     return "$baseUrl/cover/$fileId";
   }
@@ -360,18 +362,27 @@ class CommunityService {
         headers: headers,
       );
 
+      print("📡 COMMENTS STATUS: ${res.statusCode}");
+      print("📦 COMMENTS BODY: ${res.body}");
+
       final data = jsonDecode(res.body);
 
       if (res.statusCode == 200) {
-        return data;
+        if (data is List) {
+          return data;
+        } else {
+          return [];
+        }
       } else {
-        throw Exception("Failed to load comments");
+        throw Exception(data["message"] ?? "Failed to load comments");
       }
 
     } catch (e) {
-      throw Exception("Get Comments Error: $e");
+      print("❌ Get Comments Error: $e");
+      return [];
     }
   }
+
   // ================= GET JOIN REQUESTS =================
 
   static Future<List<dynamic>> getRequests(String clubId) async {

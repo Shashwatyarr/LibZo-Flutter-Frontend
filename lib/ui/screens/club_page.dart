@@ -815,6 +815,7 @@ class _ClubPageState extends State<ClubPage> {
                         ),
                       ),
 
+
                       const SizedBox(width: 6),
 
                       // ───── TYPE TAG ─────

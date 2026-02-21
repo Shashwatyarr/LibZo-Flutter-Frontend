@@ -2,6 +2,7 @@ import 'dart:ui'; // Required for Blur
 import 'package:bookproject/ui/screens/post_comments.dart';
 import 'package:bookproject/ui/widgets/app_background.dart';
 import 'package:bookproject/ui/widgets/app_background2.dart';
+import 'package:bookproject/ui/widgets/feed_skeleton.dart';
 import 'package:bookproject/ui/widgets/telegram_image.dart';
 import 'package:flutter/material.dart';
 import '../../services/post_service.dart';
@@ -23,33 +24,62 @@ class _FeedScreenState extends State<FeedScreen> {
 
   Map<String, int> currentIndex = {};
   Map<String, bool> showHeart = {};
+  final ScrollController _scrollController = ScrollController();
+  int currentPage = 1;
+  bool isLoadingMore = false;
+  bool hasMore = true;
 
   final Color kAccentColor = const Color(0xFF00E676);
   final Color kCardBg = const Color(0xFF121212).withOpacity(0.65);
 
   @override
+  @override
   void initState() {
     super.initState();
     loadFeed();
-  }
 
+    _scrollController.addListener(() {
+      if (_scrollController.position.pixels >=
+          _scrollController.position.maxScrollExtent - 200 &&
+          !isLoadingMore &&
+          hasMore) {
+        loadMorePosts();
+      }
+    });
+  }
+  Future<void> loadMorePosts() async {
+    if (isLoadingMore || !hasMore) return;
+
+    isLoadingMore = true;
+    currentPage++;
+
+    try {
+      final morePosts =
+      await ApiService.getFeed(page: currentPage);
+
+      if (morePosts.isEmpty) {
+        hasMore = false;
+      } else {
+        setState(() {
+          posts.addAll(morePosts);
+        });
+      }
+    } catch (e) {
+      debugPrint("Pagination error: $e");
+    }
+
+    isLoadingMore = false;
+  }
   Future<void> loadFeed() async {
     setState(() => loading = true);
 
+    currentPage = 1;
+    hasMore = true;
+
     try {
-      // 🔥 YE LINE MISSING THI
       currentUserId = await AuthApi.getUserId();
-
-      final feed = await ApiService.getFeed();
+      final feed = await ApiService.getFeed(page: currentPage);
       posts = feed;
-
-      // 🔥 FOLLOWING LOAD
-      if (currentUserId != null) {
-        final following = await AuthApi.getFollowing(currentUserId!);
-        followingIds =
-            following.map((u) => u["_id"].toString()).toSet();
-      }
-
     } catch (e) {
       debugPrint("Feed Error: $e");
     }
@@ -124,7 +154,7 @@ class _FeedScreenState extends State<FeedScreen> {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text("Libzo", style: TextStyle(fontFamily: 'Cursive', color: kAccentColor, fontSize: 28, fontWeight: FontWeight.bold)),
+              Text("Feed Section", style: TextStyle( fontSize: 28, fontWeight: FontWeight.bold)),
               IconButton(onPressed: loadFeed, icon: const Icon(Icons.refresh_rounded, color: Colors.white)),
             ],
           ),
@@ -159,13 +189,12 @@ class _FeedScreenState extends State<FeedScreen> {
     final String postOwnerId = userObj['_id'] ?? "";
     final String userName = userObj['username'] ?? userObj['name'] ?? "User";
     final String postText = post['text'] ?? "";
-    final List images = post["images"] ?? [];
+    final List images = post["images"]?? [];
     final int commentCount = post['commentCount'] ?? 0; // 🔥 Fetch Comment Count
 
     bool isLiked = (post['likes'] ?? []).contains(currentUserId);
     bool isFollowing = followingIds.contains(postOwnerId);
     bool isMyPost = currentUserId == postOwnerId;
-
     return GestureDetector(
       onDoubleTap: () async {
         setState(() => showHeart[id] = true);
@@ -298,10 +327,16 @@ class _FeedScreenState extends State<FeedScreen> {
 
   Widget _buildImageCarousel(List images, String id, Map post) {
     return LayoutBuilder(builder: (context, constraints) {
-      final img = images[currentIndex[id] ?? 0];
-      final double originalW = (img["width"] ?? 1).toDouble();
-      final double originalH = (img["height"] ?? 1).toDouble();
-      double finalH = (constraints.maxWidth * (originalH / originalW)).clamp(250.0, 550.0);
+      final current = images[currentIndex[id] ?? 0];
+      final String imageUrl = current["url"] ?? "";
+
+      final double originalW =
+      (current["width"] ?? 1).toDouble();
+
+      final double originalH =
+      (current["height"] ?? 1).toDouble();
+      double finalH = (constraints.maxWidth * (originalH / originalW))
+          .clamp(250.0, 550.0);
 
       return GestureDetector(
         onDoubleTap: () async {
@@ -314,13 +349,38 @@ class _FeedScreenState extends State<FeedScreen> {
         child: Stack(
           alignment: Alignment.bottomCenter,
           children: [
-            SizedBox(
-              height: finalH,
-              width: double.infinity,
-              child: PageView(
-                onPageChanged: (i) => setState(() => currentIndex[id] = i),
-                children: images.map<Widget>((img) => TelegramImage(fileId: img["file_id"], fit: BoxFit.cover)).toList(),
-              ),
+              SizedBox(
+                height: finalH,
+                width: double.infinity,
+                child: PageView(
+                  onPageChanged: (i) =>
+                      setState(() => currentIndex[id] = i),
+                  children: images.map<Widget>((img) {
+                    final String? url = img["url"];
+
+                    if (url == null || url.isEmpty) {
+                      return const Center(
+                        child: Icon(Icons.broken_image,
+                            color: Colors.grey),
+                      );
+                    }
+
+                    return Image.network(
+                      url,
+                      fit: BoxFit.cover,
+                      width: double.infinity,
+                      loadingBuilder: (context, child, progress) {
+                        if (progress == null) return child;
+                        return const Center(
+                          child: CircularProgressIndicator(),
+                        );
+                      },
+                      errorBuilder: (context, error, stackTrace) {
+                        return const Icon(Icons.broken_image);
+                      },
+                    );
+                  }).toList(),
+                ),
             ),
             if (showHeart[id] == true)
               const Center(child: Icon(Icons.favorite, size: 100, color: Colors.white70)),
@@ -377,15 +437,27 @@ class _FeedScreenState extends State<FeedScreen> {
               _buildHeader(),
               Expanded(
                 child: loading
-                    ? Center(child: CircularProgressIndicator(color: kAccentColor))
+                    ? const FeedSkeleton()
                     : RefreshIndicator(
                   onRefresh: loadFeed,
                   color: kAccentColor,
                   backgroundColor: Colors.grey[900],
                   child: ListView.builder(
-                    itemCount: posts.length,
-                    itemBuilder: (context, index) => _buildPostCard(posts[index]),
-                  ),
+                    controller: _scrollController,
+                    itemCount: posts.length + (isLoadingMore ? 1 : 0),
+                    itemBuilder: (context, index) {
+                      if (index < posts.length) {
+                        return _buildPostCard(posts[index]);
+                      } else {
+                        return const Padding(
+                          padding: EdgeInsets.symmetric(vertical: 20),
+                          child: Center(
+                            child: CircularProgressIndicator(),
+                          ),
+                        );
+                      }
+                    },
+                  )
                 ),
               ),
             ],
